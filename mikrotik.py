@@ -273,28 +273,23 @@ class MikrotikAPI:
                             logger.debug(f"Interface {interface.name}: Previous RX bytes = {interface.prev_rx_byte}, Previous TX bytes = {interface.prev_tx_byte}")
                             
                             # Tính toán tốc độ từ dữ liệu counter nếu có dữ liệu trước đó
-                            if interface.prev_rx_byte > 0 and interface.prev_tx_byte > 0:
-                                # Thời gian tính bằng giây kể từ lần cập nhật trước
-                                time_diff = 15  # Mặc định interval là 15 giây
-                                
-                                # Tính tốc độ RX (bytes/second)
-                                rx_diff = interface.rx_byte - interface.prev_rx_byte
-                                if rx_diff < 0:  # Trường hợp counter bị reset
-                                    rx_diff = interface.rx_byte
-                                interface.rx_speed = rx_diff / time_diff
-                                
-                                # Tính tốc độ TX (bytes/second)
-                                tx_diff = interface.tx_byte - interface.prev_tx_byte
-                                if tx_diff < 0:  # Trường hợp counter bị reset
-                                    tx_diff = interface.tx_byte
-                                interface.tx_speed = tx_diff / time_diff
-                                
-                                logger.debug(f"Calculated speeds for {interface.name}: RX={interface.rx_speed} bytes/s, TX={interface.tx_speed} bytes/s")
-                            else:
-                                # Nếu không có dữ liệu trước đó thì đặt tốc độ = 0
-                                interface.rx_speed = 0
-                                interface.tx_speed = 0
-                                logger.debug(f"No previous data for {interface.name}, setting speeds to 0")
+                            # Lấy khoảng thời gian refresh từ cấu hình
+                            time_diff = config.get_refresh_interval()  # Lấy refresh interval từ cấu hình
+                            
+                            # Tính tốc độ RX (bytes/second)
+                            rx_diff = interface.rx_byte - interface.prev_rx_byte if interface.prev_rx_byte > 0 else 0
+                            if rx_diff < 0:  # Trường hợp counter bị reset
+                                rx_diff = interface.rx_byte
+                            interface.rx_speed = rx_diff / time_diff if time_diff > 0 else 0
+                            
+                            # Tính tốc độ TX (bytes/second)
+                            tx_diff = interface.tx_byte - interface.prev_tx_byte if interface.prev_tx_byte > 0 else 0
+                            if tx_diff < 0:  # Trường hợp counter bị reset
+                                tx_diff = interface.tx_byte
+                            interface.tx_speed = tx_diff / time_diff if time_diff > 0 else 0
+                            
+                            # Ghi log kết quả tính toán
+                            logger.debug(f"Calculated speeds for {interface.name}: RX={interface.rx_speed} bytes/s, TX={interface.tx_speed} bytes/s")
                         except Exception as e:
                             # Nếu không lấy được tốc độ thực tế, sử dụng tốc độ tính toán
                             logger.debug(f"Failed to retrieve real-time speed for {interface.name}: {e}")
