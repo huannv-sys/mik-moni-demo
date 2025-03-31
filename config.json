@@ -24,7 +24,7 @@
       "comment": "test"
     }
   ],
-  "refresh_interval": 15,
+  "refresh_interval": 60,
   "interface_history_points": 288,
   "system_history_points": 288,
   "thresholds": {

@@ -15,7 +15,7 @@ function initDashboard() {
     
     // Auto-refresh timer
     let refreshTimer = null;
-    const defaultRefreshInterval = 15000; // 15 seconds by default
+    const defaultRefreshInterval = 60000; // 60 seconds by default
     
     // Update the active device in select dropdown and URL
     function updateActiveDevice(deviceId) {
@@ -44,7 +44,7 @@ function initDashboard() {
         if (refreshIntervalElement && refreshIntervalElement.value) {
             return parseInt(refreshIntervalElement.value) * 1000; // Convert to milliseconds
         }
-        return defaultRefreshInterval; // Default to 30 seconds
+        return defaultRefreshInterval; // Default to 60 seconds
     }
     
     // Function to start auto-refresh
