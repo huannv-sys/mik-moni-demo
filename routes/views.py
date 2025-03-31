@@ -4,6 +4,7 @@ import config
 import uuid
 import threading
 import discovery
+import realtime_discovery
 import logging
 
 logger = logging.getLogger(__name__)
@@ -297,6 +298,27 @@ def discovery_page():
             
             flash('Đã bắt đầu quét mạng. Quá trình này có thể mất vài phút...', 'info')
             return redirect(url_for('views.discovery_page'))
+        elif 'add_to_monitoring' in request.form:
+            # Thêm thiết bị được phát hiện vào danh sách giám sát
+            mac_address = request.form.get('mac_address')
+            site_id = request.form.get('site_id')
+            
+            if not mac_address or not site_id:
+                flash('Thiếu thông tin MAC address hoặc Site ID', 'danger')
+                return redirect(url_for('views.discovery_page'))
+            
+            # Thêm thiết bị vào giám sát
+            device_id = realtime_discovery.add_to_monitored_devices(mac_address, site_id)
+            
+            if device_id:
+                flash('Thiết bị đã được thêm vào danh sách giám sát', 'success')
+                # Refresh the scheduler to apply changes
+                from scheduler import schedule_device_collection
+                schedule_device_collection()
+            else:
+                flash('Không thể thêm thiết bị vào danh sách giám sát', 'danger')
+            
+            return redirect(url_for('views.discovery_page'))
     
     # GET request hoặc sau khi POST
     sites_list = list(DataStore.sites.values())
@@ -305,6 +327,9 @@ def discovery_page():
     scan_in_progress = session.get('scan_in_progress', False)
     discovery_result = session.get('discovery_result')
     discovery_error = session.get('discovery_error')
+    
+    # Lấy danh sách thiết bị được phát hiện tự động
+    discovered_devices = realtime_discovery.get_discovered_devices()
     
     # Hiển thị lỗi nếu có
     if discovery_error:
@@ -315,7 +340,8 @@ def discovery_page():
                           page='discovery',
                           sites=sites_list,
                           scan_in_progress=scan_in_progress,
-                          discovery_result=discovery_result)
+                          discovery_result=discovery_result,
+                          discovered_devices=discovered_devices)
 
 @views.route('/settings', methods=['GET', 'POST'])
 def settings():

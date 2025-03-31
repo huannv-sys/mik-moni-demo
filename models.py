@@ -26,6 +26,11 @@ class Device:
     error_message: Optional[str] = None
     comment: str = ''
     location: str = ''
+    mac_address: str = ''
+    vendor: str = ''
+    device_type: str = ''
+    auto_detected: bool = False
+    first_seen: Optional[datetime] = None
 
 @dataclass
 class SystemResources:

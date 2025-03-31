@@ -6,6 +6,7 @@ from routes.api import api
 from scheduler import start_scheduler
 import config
 from models import Site, Device, DataStore
+import realtime_discovery
 
 # Configure logging
 FORMAT = '[%(asctime)s] %(levelname)s - %(name)s: %(message)s'
@@ -46,7 +47,14 @@ def init_data_from_config():
             username=device_data.get('username', 'admin'),
             password=device_data.get('password', ''),
             enabled=device_data.get('enabled', True),
-            use_ssl=device_data.get('use_ssl', False)
+            use_ssl=device_data.get('use_ssl', False),
+            comment=device_data.get('comment', ''),
+            location=device_data.get('location', ''),
+            mac_address=device_data.get('mac_address', ''),
+            vendor=device_data.get('vendor', ''),
+            device_type=device_data.get('device_type', ''),
+            auto_detected=device_data.get('auto_detected', False),
+            first_seen=device_data.get('first_seen', None)
         )
         DataStore.devices[device.id] = device
     
@@ -56,5 +64,8 @@ def init_data_from_config():
 with app.app_context():
     init_data_from_config()
     start_scheduler()
+    # Bắt đầu tính năng phát hiện thiết bị thời gian thực
+    realtime_discovery.start_discovery()
+    logger.info("Tính năng phát hiện thiết bị thời gian thực đã được khởi động")
 
 logger.info("Mikrotik Monitoring application khởi tạo thành công")

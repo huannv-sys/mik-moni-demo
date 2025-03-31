@@ -138,6 +138,13 @@ def add_device(device: Dict[str, Any]) -> None:
             add_site(default_site)
             device['site_id'] = 'default'
     
+    # Thiết lập các giá trị mặc định cho thiết bị được tự động phát hiện
+    if 'auto_detected' in device and device['auto_detected']:
+        import datetime
+        # Đảm bảo có thời gian phát hiện đầu tiên
+        if 'first_seen' not in device or not device['first_seen']:
+            device['first_seen'] = datetime.datetime.now().isoformat()
+    
     # Kiểm tra xem thiết bị đã tồn tại chưa
     for i, d in enumerate(config.get('devices', [])):
         if d['id'] == device['id']:

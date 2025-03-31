@@ -138,6 +138,57 @@
             </div>
         </div>
         
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Thiết bị được phát hiện tự động</h5>
+                {% if discovered_devices %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>MAC Address</th>
+                                <th>IP Address</th>
+                                <th>Nhà sản xuất</th>
+                                <th>Loại thiết bị</th>
+                                <th>Lần phát hiện</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for device in discovered_devices %}
+                            <tr>
+                                <td>{{ device.mac_address }}</td>
+                                <td>{{ device.ip_address }}</td>
+                                <td>{{ device.vendor }}</td>
+                                <td>{{ device.device_type }}</td>
+                                <td>{{ device.first_seen }}</td>
+                                <td>
+                                    <form method="post" class="d-inline">
+                                        <input type="hidden" name="add_to_monitoring" value="1">
+                                        <input type="hidden" name="mac_address" value="{{ device.mac_address }}">
+                                        <select name="site_id" class="form-select form-select-sm mb-2" required>
+                                            {% for site in sites %}
+                                            <option value="{{ site.id }}">{{ site.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-plus-circle"></i> Thêm vào giám sát
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    Chưa phát hiện thiết bị mới trong mạng. Hệ thống sẽ tự động phát hiện thiết bị khi chúng kết nối vào mạng.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Hướng dẫn</h5>

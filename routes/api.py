@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 import json
 import logging
 from datetime import datetime
+import realtime_discovery
 
 logger = logging.getLogger(__name__)
 api = Blueprint('api', __name__)
@@ -333,3 +334,39 @@ def refresh_device(device_id):
     except Exception as e:
         logger.error(f"Error refreshing device data: {e}")
         return jsonify({'error': str(e)}), 500
+        
+@api.route('/discovered-devices', methods=['GET'])
+def get_discovered_devices():
+    """Get all automatically discovered devices"""
+    only_new = request.args.get('only_new', 'false').lower() == 'true'
+    discovered_devices = realtime_discovery.get_discovered_devices(only_new)
+    
+    return jsonify({
+        'devices': discovered_devices
+    })
+
+@api.route('/add-discovered-device', methods=['POST'])
+def add_discovered_device():
+    """Add a discovered device to monitored devices"""
+    data = request.json
+    
+    if not data or 'mac_address' not in data or 'site_id' not in data:
+        return jsonify({'error': 'MAC address and site ID are required'}), 400
+    
+    mac_address = data.get('mac_address')
+    site_id = data.get('site_id')
+    
+    # Thêm thiết bị vào danh sách giám sát
+    device_id = realtime_discovery.add_to_monitored_devices(mac_address, site_id)
+    
+    if device_id:
+        return jsonify({
+            'success': True,
+            'message': 'Device added successfully',
+            'device_id': device_id
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to add device'
+        }), 400
