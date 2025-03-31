@@ -4,6 +4,7 @@ from mikrotik import mikrotik_api
 from typing import Dict, Any, List
 import json
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 api = Blueprint('api', __name__)
@@ -241,6 +242,37 @@ def get_logs(device_id):
                 'timestamp': log.timestamp.isoformat() if log.timestamp else None
             }
             for log in logs
+        ]
+    })
+
+@api.route('/capsman/<device_id>', methods=['GET'])
+def get_capsman_registrations(device_id):
+    """Get CAPsMAN registrations for a device"""
+    if device_id not in DataStore.capsman_registrations:
+        return jsonify({'error': 'CAPsMAN registrations not available for this device'}), 404
+    
+    registrations = DataStore.capsman_registrations[device_id]
+    
+    return jsonify({
+        'registrations': [
+            {
+                'interface': reg.interface,
+                'radio_name': reg.radio_name,
+                'mac_address': reg.mac_address,
+                'remote_ap_mac': reg.remote_ap_mac,
+                'signal_strength': reg.signal_strength,
+                'tx_rate': reg.tx_rate,
+                'rx_rate': reg.rx_rate,
+                'tx_bytes': reg.tx_bytes,
+                'rx_bytes': reg.rx_bytes,
+                'uptime': reg.uptime,
+                'ssid': reg.ssid,
+                'channel': reg.channel,
+                'comment': reg.comment,
+                'status': reg.status,
+                'timestamp': reg.timestamp.isoformat() if reg.timestamp else None
+            }
+            for reg in registrations
         ]
     })
 

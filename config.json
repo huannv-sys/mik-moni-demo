@@ -12,10 +12,6 @@
     }
   ],
   "refresh_interval": 60,
-  "use_ssl": false,
-  "connection_timeout": 10,
-  "connection_retries": 2,
-  "retry_delay": 1,
   "interface_history_points": 288,
   "system_history_points": 288,
   "thresholds": {
@@ -23,5 +19,9 @@
     "memory_usage": 80,
     "disk_usage": 80,
     "interface_usage": 80
-  }
+  },
+  "use_ssl": true,
+  "connection_timeout": 10,
+  "connection_retries": 2,
+  "retry_delay": 1
 }

@@ -112,6 +112,25 @@ class WirelessClient:
     timestamp: datetime = field(default_factory=datetime.now)
 
 @dataclass
+class CapsmanRegistration:
+    device_id: str
+    interface: str
+    radio_name: str
+    mac_address: str
+    remote_ap_mac: str
+    signal_strength: int = 0
+    tx_rate: int = 0
+    rx_rate: int = 0
+    tx_bytes: int = 0
+    rx_bytes: int = 0
+    uptime: str = ''
+    ssid: str = ''
+    channel: str = ''
+    comment: str = ''
+    status: str = ''
+    timestamp: datetime = field(default_factory=datetime.now)
+
+@dataclass
 class LogEntry:
     device_id: str
     time: str
@@ -140,6 +159,7 @@ class DataStore:
     dhcp_leases: Dict[str, List[DHCPLease]] = {}
     firewall_rules: Dict[str, List[FirewallRule]] = {}
     wireless_clients: Dict[str, List[WirelessClient]] = {}
+    capsman_registrations: Dict[str, List[CapsmanRegistration]] = {}
     logs: Dict[str, List[LogEntry]] = {}
     alerts: List[Alert] = []
     

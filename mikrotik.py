@@ -18,7 +18,7 @@ except ImportError:
 from models import (
     Device, SystemResources, Interface, IPAddress, 
     ArpEntry, DHCPLease, FirewallRule, WirelessClient,
-    LogEntry, Alert, DataStore
+    CapsmanRegistration, LogEntry, Alert, DataStore
 )
 import config
 
@@ -439,6 +439,52 @@ class MikrotikAPI:
             logger.error(f"Error collecting wireless clients from {device_id}: {e}")
             return None
     
+    def collect_capsman_registrations(self, device_id: str) -> Optional[List[CapsmanRegistration]]:
+        """Collect CAPsMAN registrations from a device"""
+        api = self.get_api(device_id)
+        if not api:
+            return None
+        
+        try:
+            # Try to get CAPsMAN registrations - this may not be available on all devices
+            try:
+                resource = api.get_resource('/caps-man/registration-table')
+                registrations_data = resource.get()
+            except RouterOsApiError:
+                # CAPsMAN might not be enabled on this device
+                logger.info(f"CAPsMAN not available on device {device_id}")
+                DataStore.capsman_registrations[device_id] = []
+                return []
+            
+            registrations = []
+            for reg_data in registrations_data:
+                registration = CapsmanRegistration(
+                    device_id=device_id,
+                    interface=reg_data.get('interface', ''),
+                    radio_name=reg_data.get('radio-name', ''),
+                    mac_address=reg_data.get('mac-address', ''),
+                    remote_ap_mac=reg_data.get('remote-cap-mac', ''),
+                    signal_strength=int(reg_data.get('signal-strength', 0)),
+                    tx_rate=int(reg_data.get('tx-rate', 0)),
+                    rx_rate=int(reg_data.get('rx-rate', 0)),
+                    tx_bytes=int(reg_data.get('tx-bytes', 0)),
+                    rx_bytes=int(reg_data.get('rx-bytes', 0)),
+                    uptime=reg_data.get('uptime', ''),
+                    ssid=reg_data.get('ssid', ''),
+                    channel=reg_data.get('channel', ''),
+                    comment=reg_data.get('comment', ''),
+                    status=reg_data.get('status', ''),
+                    timestamp=datetime.now()
+                )
+                registrations.append(registration)
+            
+            DataStore.capsman_registrations[device_id] = registrations
+            return registrations
+            
+        except Exception as e:
+            logger.error(f"Error collecting CAPsMAN registrations from {device_id}: {e}")
+            return None
+    
     def collect_logs(self, device_id: str, limit: int = 100) -> Optional[List[LogEntry]]:
         """Collect logs from a device"""
         api = self.get_api(device_id)
@@ -504,6 +550,7 @@ class MikrotikAPI:
             "dhcp": self.collect_dhcp_leases(device_id) is not None,
             "firewall": self.collect_firewall_rules(device_id) is not None,
             "wireless": self.collect_wireless_clients(device_id) is not None,
+            "capsman": self.collect_capsman_registrations(device_id) is not None,
             "logs": self.collect_logs(device_id) is not None
         }
         

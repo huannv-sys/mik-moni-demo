@@ -38,6 +38,7 @@ function loadServicesData(deviceId) {
     loadDHCPLeases(deviceId);
     loadFirewallRules(deviceId);
     loadWirelessClients(deviceId);
+    loadCapsmanRegistrations(deviceId);
 }
 
 // Load DHCP Leases
@@ -474,6 +475,267 @@ function createSignalStrengthChart(clients) {
             plugins: {
                 legend: {
                     display: false
+                }
+            }
+        }
+    });
+}
+
+// Load CAPsMAN Registrations
+function loadCapsmanRegistrations(deviceId) {
+    const capsmanCard = document.getElementById('capsmanRegistrationsCard');
+    if (!capsmanCard) return;
+    
+    capsmanCard.innerHTML = '';
+    capsmanCard.appendChild(createSpinner());
+    
+    fetch(`/api/capsman/${deviceId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('CAPsMAN registrations not available');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const registrations = data.registrations;
+            
+            if (registrations.length === 0) {
+                capsmanCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">CAPsMAN Registrations</h5>
+                        ${createEmptyState('No CAPsMAN registrations found').outerHTML}
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create DataTable
+            capsmanCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">CAPsMAN Registrations</h5>
+                    <div class="table-responsive">
+                        <table id="capsmanRegistrationsTable" class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Interface</th>
+                                    <th>Radio Name</th>
+                                    <th>MAC Address</th>
+                                    <th>SSID</th>
+                                    <th>Signal</th>
+                                    <th>RX/TX Rate</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${registrations.map(reg => `
+                                    <tr>
+                                        <td>${reg.interface}</td>
+                                        <td>${reg.radio_name}</td>
+                                        <td>${formatMacAddress(reg.mac_address)}</td>
+                                        <td>${reg.ssid}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="signal-strength me-2" style="width: 50px;">
+                                                    ${getSignalStrengthBars(reg.signal_strength)}
+                                                </div>
+                                                <span>${reg.signal_strength} dBm</span>
+                                            </div>
+                                        </td>
+                                        <td>${reg.rx_rate} / ${reg.tx_rate} Mbps</td>
+                                        <td>
+                                            ${reg.status === 'connected' ? 
+                                                '<span class="badge bg-success">Connected</span>' : 
+                                                `<span class="badge bg-secondary">${reg.status || 'Unknown'}</span>`}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-body border-top">
+                    <h5 class="card-title">CAPsMAN Overview</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-3 text-muted">Registrations by Access Point</h6>
+                                    <canvas id="capsmanRadioChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-3 text-muted">Registrations by SSID</h6>
+                                    <canvas id="capsmanSsidChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Initialize DataTable
+            $('#capsmanRegistrationsTable').DataTable({
+                responsive: true,
+                order: [[0, 'asc']],
+                pageLength: 10,
+                language: {
+                    search: "Filter:",
+                    lengthMenu: "Show _MENU_ registrations",
+                    info: "Showing _START_ to _END_ of _TOTAL_ registrations"
+                }
+            });
+            
+            // Create CAPsMAN radio chart
+            createCapsmanRadioChart(registrations);
+            
+            // Create CAPsMAN SSID chart
+            createCapsmanSsidChart(registrations);
+        })
+        .catch(error => {
+            capsmanCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">CAPsMAN Registrations</h5>
+                    <div class="alert alert-warning">
+                        ${error.message || 'Failed to load CAPsMAN registrations'}
+                    </div>
+                </div>
+            `;
+        });
+}
+
+// Create CAPsMAN radio chart
+function createCapsmanRadioChart(registrations) {
+    const ctx = document.getElementById('capsmanRadioChart');
+    if (!ctx) return;
+    
+    // Count registrations by radio name
+    const radioCounts = {};
+    registrations.forEach(reg => {
+        if (!radioCounts[reg.radio_name]) {
+            radioCounts[reg.radio_name] = 0;
+        }
+        radioCounts[reg.radio_name]++;
+    });
+    
+    // Prepare data for chart
+    const radios = Object.keys(radioCounts);
+    const counts = radios.map(radio => radioCounts[radio]);
+    
+    // Random colors for radios
+    const backgroundColors = radios.map((_, index) => {
+        const colors = [
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(255, 206, 86, 0.7)'
+        ];
+        return colors[index % colors.length];
+    });
+    
+    // Create chart
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: radios,
+            datasets: [{
+                data: counts,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} clients (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create CAPsMAN SSID chart
+function createCapsmanSsidChart(registrations) {
+    const ctx = document.getElementById('capsmanSsidChart');
+    if (!ctx) return;
+    
+    // Count registrations by SSID
+    const ssidCounts = {};
+    registrations.forEach(reg => {
+        if (!ssidCounts[reg.ssid]) {
+            ssidCounts[reg.ssid] = 0;
+        }
+        ssidCounts[reg.ssid]++;
+    });
+    
+    // Prepare data for chart
+    const ssids = Object.keys(ssidCounts);
+    const counts = ssids.map(ssid => ssidCounts[ssid]);
+    
+    // Random colors for SSIDs
+    const backgroundColors = ssids.map((_, index) => {
+        const colors = [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)'
+        ];
+        return colors[index % colors.length];
+    });
+    
+    // Create chart
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ssids,
+            datasets: [{
+                label: 'Clients',
+                data: counts,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw || 0;
+                            return `${value} clients`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
                 }
             }
         }
