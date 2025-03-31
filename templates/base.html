@@ -93,6 +93,11 @@
                                 <i class="bi bi-geo-alt"></i> Quản lý Sites
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if page == 'discovery' %}active{% endif %}" href="{{ url_for('views.discovery_page') }}">
+                                <i class="bi bi-search"></i> Phát hiện thiết bị
+                            </a>
+                        </li>
                         <li class="nav-item mt-3">
                             <a class="nav-link {% if page == 'settings' %}active{% endif %}" href="{{ url_for('views.settings') }}">
                                 <i class="bi bi-sliders"></i> Cài đặt
@@ -144,6 +149,11 @@
                         <li class="nav-item">
                             <a class="nav-link {% if page == 'sites' %}active{% endif %}" href="{{ url_for('views.sites') }}">
                                 <i class="bi bi-geo-alt"></i> <span class="d-none d-sm-inline">Sites</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if page == 'discovery' %}active{% endif %}" href="{{ url_for('views.discovery_page') }}">
+                                <i class="bi bi-search"></i> <span class="d-none d-sm-inline">Phát hiện thiết bị</span>
                             </a>
                         </li>
                         <li class="nav-item">

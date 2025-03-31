@@ -1,8 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from models import DataStore, Site, Device
 import config
 import uuid
+import threading
+import discovery
+import logging
 
+logger = logging.getLogger(__name__)
 views = Blueprint('views', __name__)
 
 @views.route('/')
@@ -211,6 +215,105 @@ def site_devices(site_id):
                           online_count=online_count,
                           offline_count=offline_count,
                           alerts_count=alerts_count)
+
+# Hàm chạy quét mạng không đồng bộ
+def run_discovery_scan(network_ranges, username, password, site_id, port, timeout):
+    """Thực hiện quét mạng không đồng bộ và lưu kết quả vào session"""
+    try:
+        # Chạy quét mạng
+        result = discovery.run_discovery(
+            network_ranges=network_ranges,
+            username=username,
+            password=password,
+            site_id=site_id,
+            port=port,
+            timeout=timeout
+        )
+        
+        # Đánh dấu các thiết bị mới và hiện có
+        discovered_devices = []
+        for device in result.get('devices', []):
+            # Kiểm tra xem thiết bị này mới hay đã tồn tại
+            is_new = True
+            for existing_device in config.get_devices():
+                if existing_device['host'] == device['host']:
+                    is_new = False
+                    break
+            
+            device['is_new'] = is_new
+            discovered_devices.append(device)
+        
+        result['devices'] = discovered_devices
+        
+        # Lưu kết quả vào session
+        session['discovery_result'] = result
+        session['scan_in_progress'] = False
+        
+        logger.info(f"Hoàn tất quét, tìm thấy {len(discovered_devices)} thiết bị")
+        
+    except Exception as e:
+        logger.error(f"Lỗi trong quá trình quét mạng: {str(e)}")
+        session['discovery_error'] = str(e)
+        session['scan_in_progress'] = False
+
+@views.route('/discovery', methods=['GET', 'POST'])
+def discovery_page():
+    """Render and handle device discovery page"""
+    if request.method == 'POST':
+        if 'run_discovery' in request.form:
+            # Parse network ranges
+            network_ranges_text = request.form.get('network_ranges', '')
+            network_ranges = [r.strip() for r in network_ranges_text.splitlines() if r.strip()]
+            
+            if not network_ranges:
+                flash('Vui lòng nhập ít nhất một dải mạng để quét', 'danger')
+                return redirect(url_for('views.discovery_page'))
+            
+            username = request.form.get('username', 'admin')
+            password = request.form.get('password', '')
+            site_id = request.form.get('site_id')
+            port = int(request.form.get('port', 8728))
+            timeout = int(request.form.get('timeout', 3))
+            
+            # Validate site_id
+            if not site_id or site_id not in DataStore.sites:
+                flash('Vui lòng chọn một site hợp lệ', 'danger')
+                return redirect(url_for('views.discovery_page'))
+            
+            # Đánh dấu đang quét
+            session['scan_in_progress'] = True
+            session.pop('discovery_result', None)
+            session.pop('discovery_error', None)
+            
+            # Chạy quét không đồng bộ trong thread riêng
+            thread = threading.Thread(
+                target=run_discovery_scan,
+                args=(network_ranges, username, password, site_id, port, timeout)
+            )
+            thread.daemon = True
+            thread.start()
+            
+            flash('Đã bắt đầu quét mạng. Quá trình này có thể mất vài phút...', 'info')
+            return redirect(url_for('views.discovery_page'))
+    
+    # GET request hoặc sau khi POST
+    sites_list = list(DataStore.sites.values())
+    
+    # Lấy thông tin quét từ session
+    scan_in_progress = session.get('scan_in_progress', False)
+    discovery_result = session.get('discovery_result')
+    discovery_error = session.get('discovery_error')
+    
+    # Hiển thị lỗi nếu có
+    if discovery_error:
+        flash(f'Xảy ra lỗi khi quét mạng: {discovery_error}', 'danger')
+        session.pop('discovery_error', None)
+    
+    return render_template('discovery.html',
+                          page='discovery',
+                          sites=sites_list,
+                          scan_in_progress=scan_in_progress,
+                          discovery_result=discovery_result)
 
 @views.route('/settings', methods=['GET', 'POST'])
 def settings():
