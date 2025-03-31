@@ -101,7 +101,7 @@ chmod -R 755 $APP_DIR
 # Tạo tệp cấu hình Gunicorn
 echo "9. Tạo cấu hình Gunicorn..."
 cat > $APP_DIR/gunicorn_config.py << EOL
-bind = "0.0.0.0:5000"
+bind = "0.0.0.0:5001"
 workers = 3
 timeout = 120
 accesslog = "/var/log/mikrotik-monitor/access.log"
@@ -137,7 +137,7 @@ server {
     server_name _;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:5001;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
