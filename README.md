@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hệ thống Giám sát MikroTik
 
 Hệ thống giám sát thiết bị MikroTik sử dụng RouterOS API để thu thập và hiển thị dữ liệu từ các thiết bị mạng MikroTik.
@@ -187,3 +188,6 @@ sudo supervisorctl restart mikrotik-monitor
 ## Giấy phép
 
 Dự án này được phân phối dưới giấy phép MIT.
+=======
+# MIK-MONITOR-ang-ph-t-tri-n
+>>>>>>> 9b7d38a09a50225a1fc9fa98076e7b3c68426456
