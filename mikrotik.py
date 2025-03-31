@@ -263,33 +263,81 @@ class MikrotikAPI:
                                     if rate:
                                         logger.debug(f"Retrieved actual rate for {interface.name}: {rate}")
                             
-                            # Thử lấy dữ liệu monitor traffic nếu có
-                            # Chúng ta sẽ sử dụng phương pháp đơn giản hơn - tính toán dựa trên sự thay đổi byte count
-                            # và thời gian giữa các lần thu thập
+                            # Đặt biến để kiểm soát luồng
+                            monitor_traffic_success = False
                             
-                            # Logs để gỡ lỗi
-                            logger.debug(f"Using calculated speeds for {interface.name}")
-                            logger.debug(f"Interface {interface.name}: RX bytes = {interface.rx_byte}, TX bytes = {interface.tx_byte}")
-                            logger.debug(f"Interface {interface.name}: Previous RX bytes = {interface.prev_rx_byte}, Previous TX bytes = {interface.prev_tx_byte}")
+                            # Thử lấy dữ liệu từ MikroTik API monitor-traffic (API chuyên biệt cho tốc độ thời gian thực)
+                            try:
+                                # Ghi log chuẩn bị sử dụng monitor-traffic API
+                                logger.debug(f"Using monitor-traffic API for {interface.name}")
+                                
+                                # Sử dụng monitor-traffic API - đây là API chuyên biệt của MikroTik để theo dõi lưu lượng mạng thời gian thực
+                                monitor_resource = api.get_resource('/interface/monitor-traffic')
+                                
+                                # Tham số cho monitor-traffic:
+                                # - interface: tên giao diện cần theo dõi
+                                # - once: true để lấy một mẫu duy nhất
+                                monitor_params = {
+                                    'interface': interface.name,
+                                    'once': 'true'
+                                }
+                                
+                                # Thực hiện lệnh monitor-traffic
+                                monitor_result = monitor_resource.call('', **monitor_params)
+                                
+                                # Ghi log kết quả cho việc debug
+                                logger.debug(f"Monitor traffic result for {interface.name}: {monitor_result}")
+                                
+                                # Kiểm tra kết quả trả về
+                                if monitor_result and len(monitor_result) > 0:
+                                    # Lấy kết quả từ API
+                                    traffic_data = monitor_result[0]
+                                    
+                                    # Lấy tốc độ rx/tx từ kết quả
+                                    rx_bits_per_second = int(traffic_data.get('rx-bits-per-second', 0))
+                                    tx_bits_per_second = int(traffic_data.get('tx-bits-per-second', 0))
+                                    
+                                    # Chuyển đổi từ bits/second sang bytes/second (1 byte = 8 bits)
+                                    interface.rx_speed = rx_bits_per_second / 8
+                                    interface.tx_speed = tx_bits_per_second / 8
+                                    
+                                    # Ghi log để debug
+                                    logger.debug(f"Retrieved real-time speed for {interface.name} using monitor-traffic API")
+                                    logger.debug(f"RX: {rx_bits_per_second} bps = {interface.rx_speed} Bps, TX: {tx_bits_per_second} bps = {interface.tx_speed} Bps")
+                                    
+                                    # Đánh dấu là đã lấy dữ liệu thành công từ API chuyên biệt
+                                    monitor_traffic_success = True
+                                else:
+                                    logger.debug(f"monitor-traffic API did not return valid data for {interface.name}, falling back to calculated speeds")
+                            except Exception as monitor_error:
+                                # Nếu có lỗi khi sử dụng API chuyên biệt, ghi log và tiếp tục với phương pháp tính toán thông thường
+                                logger.debug(f"Failed to use monitor-traffic API for {interface.name}: {monitor_error}")
+                                logger.debug(f"Falling back to calculated speeds for {interface.name}")
                             
-                            # Tính toán tốc độ từ dữ liệu counter nếu có dữ liệu trước đó
-                            # Lấy khoảng thời gian refresh từ cấu hình
-                            time_diff = config.get_refresh_interval()  # Lấy refresh interval từ cấu hình
-                            
-                            # Tính tốc độ RX (bytes/second)
-                            rx_diff = interface.rx_byte - interface.prev_rx_byte if interface.prev_rx_byte > 0 else 0
-                            if rx_diff < 0:  # Trường hợp counter bị reset
-                                rx_diff = interface.rx_byte
-                            interface.rx_speed = rx_diff / time_diff if time_diff > 0 else 0
-                            
-                            # Tính tốc độ TX (bytes/second)
-                            tx_diff = interface.tx_byte - interface.prev_tx_byte if interface.prev_tx_byte > 0 else 0
-                            if tx_diff < 0:  # Trường hợp counter bị reset
-                                tx_diff = interface.tx_byte
-                            interface.tx_speed = tx_diff / time_diff if time_diff > 0 else 0
-                            
-                            # Ghi log kết quả tính toán
-                            logger.debug(f"Calculated speeds for {interface.name}: RX={interface.rx_speed} bytes/s, TX={interface.tx_speed} bytes/s")
+                            # Nếu API chuyên biệt không thành công, sử dụng phương pháp tính toán từ dữ liệu counter
+                            if not monitor_traffic_success:
+                                # Logs để gỡ lỗi
+                                logger.debug(f"Using calculated speeds for {interface.name}")
+                                logger.debug(f"Interface {interface.name}: RX bytes = {interface.rx_byte}, TX bytes = {interface.tx_byte}")
+                                logger.debug(f"Interface {interface.name}: Previous RX bytes = {interface.prev_rx_byte}, Previous TX bytes = {interface.prev_tx_byte}")
+                                
+                                # Lấy khoảng thời gian refresh từ cấu hình
+                                time_diff = config.get_refresh_interval()  # Lấy refresh interval từ cấu hình
+                                
+                                # Tính tốc độ RX (bytes/second)
+                                rx_diff = interface.rx_byte - interface.prev_rx_byte if interface.prev_rx_byte > 0 else 0
+                                if rx_diff < 0:  # Trường hợp counter bị reset
+                                    rx_diff = interface.rx_byte
+                                interface.rx_speed = rx_diff / time_diff if time_diff > 0 else 0
+                                
+                                # Tính tốc độ TX (bytes/second)
+                                tx_diff = interface.tx_byte - interface.prev_tx_byte if interface.prev_tx_byte > 0 else 0
+                                if tx_diff < 0:  # Trường hợp counter bị reset
+                                    tx_diff = interface.tx_byte
+                                interface.tx_speed = tx_diff / time_diff if time_diff > 0 else 0
+                                
+                                # Ghi log kết quả tính toán
+                                logger.debug(f"Calculated speeds for {interface.name}: RX={interface.rx_speed} bytes/s, TX={interface.tx_speed} bytes/s")
                         except Exception as e:
                             # Nếu không lấy được tốc độ thực tế, sử dụng tốc độ tính toán
                             logger.debug(f"Failed to retrieve real-time speed for {interface.name}: {e}")
