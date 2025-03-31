@@ -1,0 +1,7 @@
+apscheduler==3.10.1
+email-validator==2.0.0
+flask==2.3.3
+flask-sqlalchemy==3.0.5
+gunicorn==21.2.0
+psycopg2-binary==2.9.7
+routeros-api==0.17.0

@@ -91,7 +91,26 @@ source venv/bin/activate
 # Cài đặt các phụ thuộc
 echo "7. Cài đặt các phụ thuộc Python..."
 pip install --upgrade pip
-pip install -r requirements.txt || pip install apscheduler email-validator flask flask-sqlalchemy gunicorn psycopg2-binary routeros-api
+
+# Sao chép hoặc tạo file requirements.txt
+if [ -f "$SOURCE_DIR/project_requirements.txt" ]; then
+    cp "$SOURCE_DIR/project_requirements.txt" "$APP_DIR/requirements.txt"
+    echo "Sử dụng file project_requirements.txt từ thư mục nguồn"
+elif [ ! -f "$APP_DIR/requirements.txt" ]; then
+    echo "Tạo file requirements.txt mới..."
+    cat > "$APP_DIR/requirements.txt" << EOL
+apscheduler==3.10.1
+email-validator==2.0.0
+flask==2.3.3
+flask-sqlalchemy==3.0.5
+gunicorn==21.2.0
+psycopg2-binary==2.9.7
+routeros-api==0.17.0
+EOL
+fi
+
+# Cài đặt các gói từ requirements.txt
+pip install -r "$APP_DIR/requirements.txt"
 
 # Cấu hình quyền sở hữu
 echo "8. Cấu hình quyền truy cập..."
@@ -165,19 +184,7 @@ echo "13. Kiểm tra trạng thái dịch vụ..."
 sleep 5
 supervisorctl status $APP_SERVICE
 
-# Tạo tệp requirements.txt nếu chưa có
-if [ ! -f "$APP_DIR/requirements.txt" ]; then
-    echo "14. Tạo tệp requirements.txt..."
-    cat > $APP_DIR/requirements.txt << EOL
-apscheduler==3.10.1
-email-validator==2.0.0
-flask==2.3.3
-flask-sqlalchemy==3.0.5
-gunicorn==21.2.0
-psycopg2-binary==2.9.7
-routeros-api==0.17.0
-EOL
-fi
+# Phần này đã được xử lý ở trên
 
 echo ""
 echo "===== Cài đặt hoàn tất ====="
