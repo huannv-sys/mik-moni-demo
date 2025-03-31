@@ -106,6 +106,7 @@ flask-sqlalchemy==3.0.5
 gunicorn==21.2.0
 psycopg2-binary==2.9.7
 routeros-api==0.17.0
+requests==2.31.0
 EOL
 fi
 

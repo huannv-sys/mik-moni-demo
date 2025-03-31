@@ -554,10 +554,27 @@ class MikrotikAPI:
     
     def collect_logs(self, device_id: str, limit: int = 100) -> Optional[List[LogEntry]]:
         """Collect logs from a device"""
+        # Đảm bảo đã import và kiểm tra thư viện requests
+        try:
+            import requests
+            requests_available = True
+        except ImportError:
+            logger.error("Thư viện 'requests' không được cài đặt. Vui lòng cài đặt bằng lệnh: pip install requests")
+            requests_available = False
+        
         api = self.get_api(device_id)
         if not api:
             logger.error(f"Cannot collect logs: No API connection for device {device_id}")
-            return None
+            # Tạo một mục nhật ký khẩn cấp để thông báo lỗi kết nối
+            emergency_log = LogEntry(
+                device_id=device_id,
+                time=datetime.now().strftime("%H:%M:%S"),
+                topics="error",
+                message="Không thể kết nối đến thiết bị để lấy log. Vui lòng kiểm tra kết nối mạng và cấu hình thiết bị.",
+                timestamp=datetime.now()
+            )
+            DataStore.logs[device_id] = [emergency_log]
+            return [emergency_log]
         
         try:
             # Sử dụng chuỗi truy vấn Mikrotik API trực tiếp
@@ -567,50 +584,72 @@ class MikrotikAPI:
             logger.info(f"Trying to collect logs from device {device_id}")
             
             # Phương pháp 1: Sử dụng đường dẫn '/log'
+            success = False
+            methods_tried = 0
+            
             try:
                 logger.debug(f"Method 1: Using '/log' path for device {device_id}")
                 resource = api.get_resource('/log')
-                log_data = resource.get()
+                log_data = resource.get(limit=str(limit))
                 logger.debug(f"Method 1 success: Got {len(log_data)} logs")
+                success = True
             except Exception as e:
+                methods_tried += 1
                 logger.debug(f"Method 1 failed: {str(e)}")
-                
-                # Phương pháp 2: Sử dụng lệnh trực tiếp
+            
+            # Nếu phương pháp 1 thất bại, thử phương pháp 2
+            if not success:
                 try:
                     logger.debug(f"Method 2: Using direct command for device {device_id}")
-                    cmd = api.get_binary_resource('/').call('log/print')
+                    cmd = api.get_binary_resource('/').call('log/print', {'limit': str(limit)})
                     log_data = cmd
                     logger.debug(f"Method 2 success: Got {len(log_data)} logs")
+                    success = True
                 except Exception as e:
+                    methods_tried += 1
                     logger.debug(f"Method 2 failed: {str(e)}")
+            
+            # Nếu phương pháp 2 thất bại, thử phương pháp 3
+            if not success:
+                try:
+                    logger.debug(f"Method 3: Using '/system/log' path for device {device_id}")
+                    resource = api.get_resource('/system/log')
+                    log_data = resource.get(limit=str(limit))
+                    logger.debug(f"Method 3 success: Got {len(log_data)} logs")
+                    success = True
+                except Exception as e:
+                    methods_tried += 1
+                    logger.debug(f"Method 3 failed: {str(e)}")
+            
+            # Nếu tất cả thất bại và requests khả dụng, thử phương pháp 4 với ping
+            if not success and methods_tried >= 3:
+                try:
+                    logger.debug(f"Method 4: Generating ping log for device {device_id}")
+                    ping_resource = api.get_resource('/ping')
+                    ping_resource.call(address='8.8.8.8', count='1')
                     
-                    # Phương pháp 3: Sử dụng đường dẫn '/system/log'
-                    try:
-                        logger.debug(f"Method 3: Using '/system/log' path for device {device_id}")
-                        resource = api.get_resource('/system/log')
-                        log_data = resource.get()
-                        logger.debug(f"Method 3 success: Got {len(log_data)} logs")
-                    except Exception as e:
-                        logger.debug(f"Method 3 failed: {str(e)}")
-                        
-                        # Phương pháp 4: Tạo log giả để kiểm tra
-                        try:
-                            # Gửi một sóng ping để tạo log hệ thống
-                            logger.debug(f"Method 4: Generating ping log for device {device_id}")
-                            ping_resource = api.get_resource('/ping')
-                            ping_resource.call(address='8.8.8.8', count='1')
-                            
-                            # Thử lấy logs lần nữa
-                            time.sleep(1)  # Chờ log được tạo
-                            resource = api.get_resource('/log')
-                            log_data = resource.get(limit='5')
-                            logger.debug(f"Method 4 success: Got {len(log_data)} logs")
-                        except Exception as e:
-                            logger.debug(f"Method 4 failed: {str(e)}")
-                            # Không còn cách nào khác
-                            logger.error(f"All methods to get logs from {device_id} failed")
-                            DataStore.logs[device_id] = []
-                            return []
+                    # Thử lấy logs lần nữa
+                    time.sleep(1)  # Chờ log được tạo
+                    resource = api.get_resource('/log')
+                    log_data = resource.get(limit='5')
+                    logger.debug(f"Method 4 success: Got {len(log_data)} logs")
+                    success = True
+                except Exception as e:
+                    logger.debug(f"Method 4 failed: {str(e)}")
+            
+            # Nếu tất cả phương pháp đều thất bại
+            if not success:
+                logger.error(f"All methods to get logs from {device_id} failed")
+                # Tạo log thông báo
+                error_log = LogEntry(
+                    device_id=device_id,
+                    time=datetime.now().strftime("%H:%M:%S"),
+                    topics="error",
+                    message=f"Không thể lấy log từ thiết bị. Đã thử {methods_tried} phương pháp khác nhau.",
+                    timestamp=datetime.now()
+                )
+                DataStore.logs[device_id] = [error_log]
+                return [error_log]
             
             # In thông tin log để debug
             logger.debug(f"Log data sample: {str(log_data[:2]) if log_data else 'Empty'}")
@@ -618,67 +657,72 @@ class MikrotikAPI:
             # Xử lý dữ liệu logs
             logs = []
             for log_entry_data in log_data:
-                logger.debug(f"Processing log entry: {str(log_entry_data)}")
-                
-                # Xử lý các trường khác nhau có thể có trong log
-                time_val = ''
-                topics_val = ''
-                message_val = ''
-                
-                # Kiểm tra các khóa có thể có
-                for key, value in log_entry_data.items():
-                    logger.debug(f"Log entry key: {key}, value: {value}")
+                try:
+                    # Xử lý các trường khác nhau có thể có trong log
+                    time_val = ''
+                    topics_val = ''
+                    message_val = ''
                     
-                    if key in ['time']:
-                        time_val = str(value) if value is not None else ''
-                    elif key in ['topics', 'topic']:
-                        topics_val = str(value) if value is not None else ''
-                    elif key in ['message']:
-                        message_val = str(value) if value is not None else ''
-                
-                # Nếu không tìm thấy các trường thiết yếu, thử các trường khác
-                if not time_val and 'timestamp' in log_entry_data:
-                    time_val = str(log_entry_data['timestamp'])
-                
-                if not message_val:
-                    # Nếu không có trường message, tạo từ toàn bộ entry
-                    message_val = str(log_entry_data)
-                
-                log_entry = LogEntry(
-                    device_id=device_id,
-                    time=time_val,
-                    topics=topics_val,
-                    message=message_val,
-                    timestamp=datetime.now()
-                )
-                logs.append(log_entry)
-                logger.debug(f"Added log entry: {time_val} - {topics_val} - {message_val}")
+                    # Kiểm tra các khóa có thể có
+                    for key, value in log_entry_data.items():
+                        if key in ['time']:
+                            time_val = str(value) if value is not None else ''
+                        elif key in ['topics', 'topic']:
+                            topics_val = str(value) if value is not None else ''
+                        elif key in ['message']:
+                            message_val = str(value) if value is not None else ''
+                    
+                    # Nếu không tìm thấy các trường thiết yếu, thử các trường khác
+                    if not time_val and 'timestamp' in log_entry_data:
+                        time_val = str(log_entry_data['timestamp'])
+                    
+                    if not message_val:
+                        # Nếu không có trường message, tạo từ toàn bộ entry
+                        message_val = str(log_entry_data)
+                    
+                    log_entry = LogEntry(
+                        device_id=device_id,
+                        time=time_val,
+                        topics=topics_val,
+                        message=message_val,
+                        timestamp=datetime.now()
+                    )
+                    logs.append(log_entry)
+                except Exception as entry_error:
+                    logger.error(f"Error processing log entry {str(log_entry_data)}: {str(entry_error)}")
+                    continue
             
             # Nếu không có logs, log một cảnh báo nhưng vẫn trả về danh sách rỗng
             if not logs:
                 logger.warning(f"No logs found on device {device_id}")
-                # Tạo log giả để kiểm tra tính năng hiển thị
-                test_log = LogEntry(
+                # Tạo log thông báo
+                info_log = LogEntry(
                     device_id=device_id,
                     time=datetime.now().strftime("%H:%M:%S"),
-                    topics="test",
-                    message="This is a test log entry to verify log display functionality",
+                    topics="info",
+                    message="Không tìm thấy log nào trên thiết bị. Thiết bị có thể đã xóa log hoặc cấu hình log bị tắt.",
                     timestamp=datetime.now()
                 )
-                logs.append(test_log)
-                logger.debug("Added test log entry for display verification")
-                
+                logs.append(info_log)
+            
             DataStore.logs[device_id] = logs
             return logs
             
         except Exception as e:
             logger.error(f"Error collecting logs from {device_id}: {str(e)}")
-            # In traceback để debug
+            # Ghi chi tiết lỗi để debug
             logger.error(f"Traceback: {traceback.format_exc()}")
             
-            # Tạo một danh sách rỗng để tránh lỗi
-            DataStore.logs[device_id] = []
-            return []
+            # Tạo một mục log lỗi
+            error_log = LogEntry(
+                device_id=device_id,
+                time=datetime.now().strftime("%H:%M:%S"),
+                topics="error",
+                message=f"Lỗi khi thu thập log: {str(e)}",
+                timestamp=datetime.now()
+            )
+            DataStore.logs[device_id] = [error_log]
+            return [error_log]
     
     def collect_all_data(self, device_id: str) -> Dict[str, bool]:
         """Collect all data from a device"""
