@@ -231,6 +231,34 @@ body {
     z-index: 1050;
 }
 
+/* WebSocket Update Effect */
+.bg-update {
+    animation: highlight-update 1s ease-in-out;
+    transition: background-color 0.5s ease-in-out;
+}
+
+@keyframes highlight-update {
+    0% {
+        background-color: rgba(25, 135, 84, 0);
+    }
+    50% {
+        background-color: rgba(25, 135, 84, 0.3);
+    }
+    100% {
+        background-color: rgba(25, 135, 84, 0);
+    }
+}
+
+#refreshStatus {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: rgba(25, 135, 84, 0.1);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    color: #198754;
+    transition: opacity 0.3s ease-in-out;
+}
+
 /* Settings Form Styles */
 .settings-section {
     margin-bottom: 2rem;

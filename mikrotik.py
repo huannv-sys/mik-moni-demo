@@ -271,44 +271,47 @@ class MikrotikAPI:
                                 # Ghi log chuẩn bị sử dụng monitor-traffic API
                                 logger.debug(f"Using monitor-traffic API for {interface.name}")
                                 
+                                # Phương pháp mới không sử dụng thông số 'interface' trực tiếp mà lọc theo tên sau khi gọi API
                                 # Sử dụng monitor-traffic API - đây là API chuyên biệt của MikroTik để theo dõi lưu lượng mạng thời gian thực
                                 monitor_resource = api.get_resource('/interface/monitor-traffic')
                                 
-                                # Tham số cho monitor-traffic:
-                                # - interface: tên giao diện cần theo dõi
-                                # - once: true để lấy một mẫu duy nhất
+                                # Thực hiện lệnh monitor-traffic không có tham số interface
                                 monitor_params = {
-                                    'interface': interface.name,
                                     'once': 'true'
                                 }
                                 
                                 # Thực hiện lệnh monitor-traffic
-                                monitor_result = monitor_resource.call('', **monitor_params)
+                                monitor_result = monitor_resource.call(**monitor_params)
                                 
-                                # Ghi log kết quả cho việc debug
-                                logger.debug(f"Monitor traffic result for {interface.name}: {monitor_result}")
+                                # Ghi log số lượng kết quả nhận được cho việc debug
+                                logger.debug(f"Monitor traffic returned {len(monitor_result) if monitor_result else 0} results")
                                 
-                                # Kiểm tra kết quả trả về
+                                # Tìm interface phù hợp trong kết quả
+                                monitor_traffic_success = False
                                 if monitor_result and len(monitor_result) > 0:
-                                    # Lấy kết quả từ API
-                                    traffic_data = monitor_result[0]
+                                    # Tìm kiếm dữ liệu của interface cụ thể trong kết quả
+                                    for traffic_item in monitor_result:
+                                        if traffic_item.get('name') == interface.name:
+                                            # Lấy tốc độ rx/tx từ kết quả
+                                            rx_bits_per_second = int(traffic_item.get('rx-bits-per-second', 0))
+                                            tx_bits_per_second = int(traffic_item.get('tx-bits-per-second', 0))
+                                            
+                                            # Chuyển đổi từ bits/second sang bytes/second (1 byte = 8 bits)
+                                            interface.rx_speed = rx_bits_per_second / 8
+                                            interface.tx_speed = tx_bits_per_second / 8
+                                            
+                                            # Ghi log để debug
+                                            logger.debug(f"Retrieved real-time speed for {interface.name} using monitor-traffic API")
+                                            logger.debug(f"RX: {rx_bits_per_second} bps = {interface.rx_speed} Bps, TX: {tx_bits_per_second} bps = {interface.tx_speed} Bps")
+                                            
+                                            # Đánh dấu là đã lấy dữ liệu thành công từ API chuyên biệt
+                                            monitor_traffic_success = True
+                                            break
                                     
-                                    # Lấy tốc độ rx/tx từ kết quả
-                                    rx_bits_per_second = int(traffic_data.get('rx-bits-per-second', 0))
-                                    tx_bits_per_second = int(traffic_data.get('tx-bits-per-second', 0))
-                                    
-                                    # Chuyển đổi từ bits/second sang bytes/second (1 byte = 8 bits)
-                                    interface.rx_speed = rx_bits_per_second / 8
-                                    interface.tx_speed = tx_bits_per_second / 8
-                                    
-                                    # Ghi log để debug
-                                    logger.debug(f"Retrieved real-time speed for {interface.name} using monitor-traffic API")
-                                    logger.debug(f"RX: {rx_bits_per_second} bps = {interface.rx_speed} Bps, TX: {tx_bits_per_second} bps = {interface.tx_speed} Bps")
-                                    
-                                    # Đánh dấu là đã lấy dữ liệu thành công từ API chuyên biệt
-                                    monitor_traffic_success = True
+                                    if not monitor_traffic_success:
+                                        logger.debug(f"monitor-traffic API did not return data for {interface.name}, falling back to calculated speeds")
                                 else:
-                                    logger.debug(f"monitor-traffic API did not return valid data for {interface.name}, falling back to calculated speeds")
+                                    logger.debug(f"monitor-traffic API did not return valid data, falling back to calculated speeds")
                             except Exception as monitor_error:
                                 # Nếu có lỗi khi sử dụng API chuyên biệt, ghi log và tiếp tục với phương pháp tính toán thông thường
                                 logger.debug(f"Failed to use monitor-traffic API for {interface.name}: {monitor_error}")

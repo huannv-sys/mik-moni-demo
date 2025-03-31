@@ -59,5 +59,70 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Dashboard JavaScript -->
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+<!-- WebSocket Dashboard Integration -->
+<script>
+    // Lắng nghe sự kiện cập nhật tốc độ mạng từ WebSocket
+    $(document).on('network_speeds_updated', function(event, data) {
+        // Hiển thị thông tin tốc độ mạng chỉ khi thiết bị hiện đang được chọn
+        const currentDeviceId = $('#deviceSelect').val();
+        
+        if (data.device_id === currentDeviceId) {
+            // Tìm giao diện đang hiển thị trong bảng
+            const interfacesTable = $('#interfacesTable');
+            if (interfacesTable.length > 0) {
+                // Cập nhật dữ liệu trong bảng giao diện
+                data.interfaces.forEach(function(iface) {
+                    const rxSpeedCell = $(`#rx_speed_${iface.name}`);
+                    const txSpeedCell = $(`#tx_speed_${iface.name}`);
+                    
+                    if (rxSpeedCell.length > 0) {
+                        // Định dạng tốc độ thành KB/s hoặc MB/s
+                        const rxFormatted = formatDataRate(iface.rx_speed);
+                        const txFormatted = formatDataRate(iface.tx_speed);
+                        
+                        // Cập nhật giá trị
+                        rxSpeedCell.text(rxFormatted);
+                        txSpeedCell.text(txFormatted);
+                        
+                        // Áp dụng hiệu ứng nhấp nháy để thông báo cập nhật
+                        rxSpeedCell.addClass('bg-update');
+                        txSpeedCell.addClass('bg-update');
+                        
+                        // Xóa hiệu ứng sau 1 giây
+                        setTimeout(function() {
+                            rxSpeedCell.removeClass('bg-update');
+                            txSpeedCell.removeClass('bg-update');
+                        }, 1000);
+                    }
+                });
+                
+                // Cập nhật biểu đồ nếu có
+                if (typeof updateNetworkChart === 'function') {
+                    updateNetworkChart(data.interfaces);
+                }
+            }
+            
+            // Hiển thị thông báo cập nhật
+            const statusLabel = $('#refreshStatus');
+            statusLabel.removeClass('d-none').text('Đã cập nhật qua WebSocket').addClass('text-success');
+            setTimeout(function() {
+                statusLabel.addClass('d-none');
+            }, 2000);
+        }
+    });
+    
+    // Hàm định dạng tốc độ dữ liệu
+    function formatDataRate(bytesPerSecond) {
+        if (bytesPerSecond < 1024) {
+            return bytesPerSecond.toFixed(2) + ' B/s';
+        } else if (bytesPerSecond < 1024 * 1024) {
+            return (bytesPerSecond / 1024).toFixed(2) + ' KB/s';
+        } else {
+            return (bytesPerSecond / (1024 * 1024)).toFixed(2) + ' MB/s';
+        }
+    }
+</script>
 {% endblock %}

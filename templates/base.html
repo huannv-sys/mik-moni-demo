@@ -227,9 +227,37 @@
     <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
     
+    <!-- Socket.IO for real-time updates -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    
     <!-- Utility Scripts -->
     <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    
+    <!-- WebSocket Initialization -->
+    <script>
+        // Kết nối đến máy chủ Socket.IO
+        const socket = io();
+        
+        // Lắng nghe sự kiện kết nối
+        socket.on('connect', function() {
+            console.log('Connected to WebSocket server');
+        });
+        
+        // Lắng nghe sự kiện network_speeds
+        socket.on('network_speeds', function(data) {
+            // Hiện tại chỉ log ra console, sẽ xử lý trong file JavaScript riêng
+            console.log('Received network speed data:', data);
+            
+            // Phát sự kiện để các trang con có thể xử lý
+            $(document).trigger('network_speeds_updated', [data]);
+        });
+        
+        // Xử lý ngắt kết nối
+        socket.on('disconnect', function() {
+            console.log('Disconnected from WebSocket server');
+        });
+    </script>
     
     <!-- Update server time -->
     <script>
