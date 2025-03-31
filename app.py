@@ -6,7 +6,8 @@ from routes.api import api
 from scheduler import start_scheduler
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+FORMAT = '[%(asctime)s] %(levelname)s - %(name)s: %(message)s'
+logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
