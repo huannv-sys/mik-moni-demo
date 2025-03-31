@@ -1,16 +1,21 @@
 {
   "devices": [
     {
-      "id": null,
+      "id": "nha_1",
       "name": "nha",
       "host": "1.54.179.248",
       "port": 8728,
       "username": "admin",
       "password": "Ictech123$",
-      "enabled": true
+      "enabled": true,
+      "use_ssl": false
     }
   ],
   "refresh_interval": 60,
+  "use_ssl": false,
+  "connection_timeout": 10,
+  "connection_retries": 2,
+  "retry_delay": 1,
   "interface_history_points": 288,
   "system_history_points": 288,
   "thresholds": {

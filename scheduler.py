@@ -60,7 +60,8 @@ def schedule_device_collection() -> None:
             port=device_data.get('port', 8728),
             username=device_data.get('username', 'admin'),
             password=device_data.get('password', ''),
-            enabled=device_data.get('enabled', True)
+            enabled=device_data.get('enabled', True),
+            use_ssl=device_data.get('use_ssl', False)
         )
         DataStore.devices[device_id] = device
         
