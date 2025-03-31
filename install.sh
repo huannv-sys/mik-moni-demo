@@ -27,7 +27,7 @@ apt update && apt upgrade -y
 
 # Cài đặt các gói cần thiết
 echo "2. Cài đặt các gói cần thiết..."
-apt install -y python3 python3-pip python3-venv supervisor nginx wget unzip
+apt install -y python3 python3-pip python3-venv supervisor nginx wget unzip libpq-dev python3-dev
 
 # Tạo người dùng hệ thống
 echo "3. Tạo người dùng hệ thống cho ứng dụng..."
