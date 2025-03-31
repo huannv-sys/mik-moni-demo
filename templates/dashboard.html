@@ -64,12 +64,79 @@
 
 <!-- WebSocket Dashboard Integration -->
 <script>
+    // Lưu trữ giá trị cũ để so sánh
+    const previousValues = {};
+    
+    // Hiển thị biểu tượng thay đổi
+    function showChangeIndicator(element, isIncrease) {
+        const indicator = isIncrease ? 
+            '<span class="change-indicator up"><i class="bi bi-arrow-up-right"></i></span>' : 
+            '<span class="change-indicator down"><i class="bi bi-arrow-down-right"></i></span>';
+        
+        // Xóa indicator cũ nếu có
+        element.find('.change-indicator').remove();
+        // Thêm indicator mới
+        element.append(indicator);
+        
+        // Xóa hiệu ứng sau 3 giây
+        setTimeout(function() {
+            element.find('.change-indicator').fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 3000);
+    }
+    
+    // Vẽ mini-chart cho tốc độ mạng
+    function drawMiniChart(element, values) {
+        if (!values || values.length === 0) return;
+        
+        // Tạo canvas nếu chưa có
+        if (element.find('canvas.mini-chart').length === 0) {
+            element.append('<canvas class="mini-chart"></canvas>');
+        }
+        
+        const canvas = element.find('canvas.mini-chart')[0];
+        const ctx = canvas.getContext('2d');
+        
+        // Xóa canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Tính tỷ lệ
+        const max = Math.max(...values);
+        const height = canvas.height;
+        const width = canvas.width;
+        const step = width / (values.length - 1);
+        
+        // Vẽ đường
+        ctx.beginPath();
+        ctx.strokeStyle = '#0dcaf0';
+        ctx.lineWidth = 2;
+        
+        for (let i = 0; i < values.length; i++) {
+            const x = i * step;
+            const y = height - (values[i] / max * height) || height;
+            
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        
+        ctx.stroke();
+    }
+    
     // Lắng nghe sự kiện cập nhật tốc độ mạng từ WebSocket
     $(document).on('network_speeds_updated', function(event, data) {
         // Hiển thị thông tin tốc độ mạng chỉ khi thiết bị hiện đang được chọn
         const currentDeviceId = $('#deviceSelect').val();
         
         if (data.device_id === currentDeviceId) {
+            // Hiển thị thông tin chế độ chính xác cao
+            if (data.high_precision) {
+                $('#refreshStatus').removeClass('d-none').text('Chế độ chính xác cao: Đang cập nhật mỗi giây').addClass('text-warning');
+            }
+            
             // Tìm giao diện đang hiển thị trong bảng
             const interfacesTable = $('#interfacesTable');
             if (interfacesTable.length > 0) {
@@ -83,19 +150,65 @@
                         const rxFormatted = formatDataRate(iface.rx_speed);
                         const txFormatted = formatDataRate(iface.tx_speed);
                         
-                        // Cập nhật giá trị
+                        // Khởi tạo giá trị trước đó nếu chưa có
+                        if (!previousValues[iface.name]) {
+                            previousValues[iface.name] = {
+                                rx_speed: iface.rx_speed,
+                                tx_speed: iface.tx_speed,
+                                rx_history: [iface.rx_speed],
+                                tx_history: [iface.tx_speed]
+                            };
+                        }
+                        
+                        // Cập nhật lịch sử (giữ tối đa 10 điểm)
+                        previousValues[iface.name].rx_history.push(iface.rx_speed);
+                        previousValues[iface.name].tx_history.push(iface.tx_speed);
+                        if (previousValues[iface.name].rx_history.length > 10) {
+                            previousValues[iface.name].rx_history.shift();
+                        }
+                        if (previousValues[iface.name].tx_history.length > 10) {
+                            previousValues[iface.name].tx_history.shift();
+                        }
+                        
+                        // So sánh với giá trị trước đó và áp dụng hiệu ứng
+                        const rxDiff = iface.rx_speed - previousValues[iface.name].rx_speed;
+                        const txDiff = iface.tx_speed - previousValues[iface.name].tx_speed;
+                        
+                        // Cập nhật giá trị và thêm class hiệu ứng
                         rxSpeedCell.text(rxFormatted);
                         txSpeedCell.text(txFormatted);
                         
-                        // Áp dụng hiệu ứng nhấp nháy để thông báo cập nhật
-                        rxSpeedCell.addClass('bg-update');
-                        txSpeedCell.addClass('bg-update');
+                        // Xóa class hiệu ứng cũ
+                        rxSpeedCell.removeClass('value-increase value-decrease');
+                        txSpeedCell.removeClass('value-increase value-decrease');
                         
-                        // Xóa hiệu ứng sau 1 giây
-                        setTimeout(function() {
-                            rxSpeedCell.removeClass('bg-update');
-                            txSpeedCell.removeClass('bg-update');
-                        }, 1000);
+                        // Áp dụng hiệu ứng tăng/giảm cho RX
+                        if (rxDiff > 0.01) {
+                            rxSpeedCell.addClass('value-increase');
+                            showChangeIndicator(rxSpeedCell, true);
+                        } else if (rxDiff < -0.01) {
+                            rxSpeedCell.addClass('value-decrease');
+                            showChangeIndicator(rxSpeedCell, false);
+                        }
+                        
+                        // Áp dụng hiệu ứng tăng/giảm cho TX
+                        if (txDiff > 0.01) {
+                            txSpeedCell.addClass('value-increase');
+                            showChangeIndicator(txSpeedCell, true);
+                        } else if (txDiff < -0.01) {
+                            txSpeedCell.addClass('value-decrease');
+                            showChangeIndicator(txSpeedCell, false);
+                        }
+                        
+                        // Vẽ mini-chart nếu có đủ dữ liệu
+                        if (previousValues[iface.name].rx_history.length > 1) {
+                            drawMiniChart(rxSpeedCell, previousValues[iface.name].rx_history);
+                            drawMiniChart(txSpeedCell, previousValues[iface.name].tx_history);
+                        }
+                        
+                        // Lưu giá trị hiện tại để so sánh lần sau
+                        previousValues[iface.name].rx_speed = iface.rx_speed;
+                        previousValues[iface.name].tx_speed = iface.tx_speed;
                     }
                 });
                 
@@ -105,12 +218,30 @@
                 }
             }
             
-            // Hiển thị thông báo cập nhật
-            const statusLabel = $('#refreshStatus');
-            statusLabel.removeClass('d-none').text('Đã cập nhật qua WebSocket').addClass('text-success');
+            // Hiển thị thông báo cập nhật nếu không ở chế độ chính xác cao
+            if (!data.high_precision) {
+                const statusLabel = $('#refreshStatus');
+                statusLabel.removeClass('d-none').text('Đã cập nhật qua WebSocket').addClass('text-success');
+                setTimeout(function() {
+                    statusLabel.addClass('d-none');
+                }, 2000);
+            }
+        }
+    });
+    
+    // Lắng nghe sự kiện thay đổi chế độ chính xác cao
+    socket.on('high_precision_changed', function(data) {
+        if (data.enabled) {
+            $('#refreshStatus').removeClass('d-none').text('Chế độ chính xác cao: Đang cập nhật mỗi giây').addClass('text-warning');
+            $('#highPrecisionMode').prop('checked', true);
+        } else {
+            $('#refreshStatus').removeClass('d-none').text('Chế độ thường: Đang cập nhật mỗi 5 giây').addClass('text-success');
+            $('#highPrecisionMode').prop('checked', false);
+            
+            // Ẩn thông báo sau 3 giây
             setTimeout(function() {
-                statusLabel.addClass('d-none');
-            }, 2000);
+                $('#refreshStatus').addClass('d-none');
+            }, 3000);
         }
     });
     

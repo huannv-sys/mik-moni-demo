@@ -327,17 +327,49 @@ class MikrotikAPI:
                                 # Lấy khoảng thời gian refresh từ cấu hình
                                 time_diff = config.get_refresh_interval()  # Lấy refresh interval từ cấu hình
                                 
-                                # Tính tốc độ RX (bytes/second)
+                                # Lấy thời gian chính xác đến mili giây
+                                now = datetime.now()
+                                time_diff_ms = time_diff
+                                
+                                # Nếu có timestamp trước đó, tính thời gian chính xác hơn
+                                if hasattr(interface, 'last_calculation_time') and interface.last_calculation_time:
+                                    time_diff_ms = (now - interface.last_calculation_time).total_seconds()
+                                
+                                # Cập nhật timestamp cho lần tính tiếp theo
+                                interface.last_calculation_time = now
+                                
+                                # Tính tốc độ RX (bytes/second) với độ chính xác cao hơn
                                 rx_diff = interface.rx_byte - interface.prev_rx_byte if interface.prev_rx_byte > 0 else 0
                                 if rx_diff < 0:  # Trường hợp counter bị reset
                                     rx_diff = interface.rx_byte
-                                interface.rx_speed = rx_diff / time_diff if time_diff > 0 else 0
                                 
-                                # Tính tốc độ TX (bytes/second)
+                                # Dùng time_diff_ms chính xác nếu có, ngược lại dùng khoảng thời gian từ cấu hình
+                                actual_time_diff = time_diff_ms if time_diff_ms > 0 else time_diff
+                                
+                                # Tính tốc độ với nhiều thập phân hơn và làm tròn để tránh hiện tượng giá trị 0
+                                if actual_time_diff > 0:
+                                    interface.rx_speed = round(rx_diff / actual_time_diff, 3)
+                                    
+                                    # Đảm bảo giá trị nhỏ không bị làm tròn thành 0
+                                    if rx_diff > 0 and interface.rx_speed < 0.001:
+                                        interface.rx_speed = 0.001  # Giá trị tối thiểu để hiển thị
+                                else:
+                                    interface.rx_speed = 0
+                                
+                                # Tính tốc độ TX (bytes/second) với độ chính xác cao hơn
                                 tx_diff = interface.tx_byte - interface.prev_tx_byte if interface.prev_tx_byte > 0 else 0
                                 if tx_diff < 0:  # Trường hợp counter bị reset
                                     tx_diff = interface.tx_byte
-                                interface.tx_speed = tx_diff / time_diff if time_diff > 0 else 0
+                                
+                                # Tính tốc độ với nhiều thập phân hơn
+                                if actual_time_diff > 0:
+                                    interface.tx_speed = round(tx_diff / actual_time_diff, 3)
+                                    
+                                    # Đảm bảo giá trị nhỏ không bị làm tròn thành 0
+                                    if tx_diff > 0 and interface.tx_speed < 0.001:
+                                        interface.tx_speed = 0.001  # Giá trị tối thiểu để hiển thị
+                                else:
+                                    interface.tx_speed = 0
                                 
                                 # Ghi log kết quả tính toán
                                 logger.debug(f"Calculated speeds for {interface.name}: RX={interface.rx_speed} bytes/s, TX={interface.tx_speed} bytes/s")

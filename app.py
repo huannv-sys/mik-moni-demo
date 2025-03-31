@@ -65,14 +65,28 @@ def init_data_from_config():
     
     logger.info(f"Đã khởi tạo {len(DataStore.sites)} sites và {len(DataStore.devices)} thiết bị từ cấu hình")
 
+# Biến toàn cục để lưu trạng thái chế độ chính xác cao
+high_precision_mode = False
+
 # Hàm phát sóng dữ liệu tốc độ mạng qua WebSocket
 def emit_network_speeds():
     """Phát sóng thông tin tốc độ mạng qua websocket"""
     from mikrotik import MikrotikAPI
     mikrotik_api = MikrotikAPI()
     
+    # Mặc định là phát dữ liệu mỗi 5 giây
+    emit_interval = 5
+    
     while True:
         try:
+            global high_precision_mode
+            
+            # Sử dụng khoảng thời gian khác nhau tùy vào chế độ
+            if high_precision_mode:
+                emit_interval = 1  # Phát dữ liệu mỗi 1 giây trong chế độ chính xác cao
+            else:
+                emit_interval = 5  # Phát dữ liệu mỗi 5 giây trong chế độ thường
+            
             # Thu thập dữ liệu interfaces cho tất cả thiết bị
             for device_id, device in DataStore.devices.items():
                 if not device.enabled:
@@ -94,19 +108,23 @@ def emit_network_speeds():
                         'tx_speed': iface.tx_speed,
                         'rx_byte': iface.rx_byte,
                         'tx_byte': iface.tx_byte,
-                        'timestamp': iface.timestamp.isoformat()
+                        'timestamp': iface.timestamp.isoformat(),
+                        'running': iface.running,
+                        'disabled': iface.disabled,
+                        'type': getattr(iface, 'type', '')
                     })
                 
                 # Phát sóng dữ liệu qua WebSocket
                 socketio.emit('network_speeds', {
                     'device_id': device_id, 
                     'device_name': device.name,
-                    'interfaces': interface_data
+                    'interfaces': interface_data,
+                    'high_precision': high_precision_mode
                 })
                 logger.debug(f"Đã phát sóng dữ liệu tốc độ mạng cho thiết bị {device.name}")
             
             # Tạm dừng để không phát quá nhiều dữ liệu
-            threading.Event().wait(2)  # Phát dữ liệu mỗi 2 giây
+            threading.Event().wait(emit_interval)
         except Exception as e:
             logger.error(f"Lỗi khi phát sóng dữ liệu qua websocket: {e}")
             threading.Event().wait(5)  # Đợi 5 giây nếu có lỗi
@@ -120,6 +138,19 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info(f"Client disconnected from websocket")
+
+# Sự kiện khi client thay đổi chế độ chính xác cao
+@socketio.on('set_high_precision')
+def handle_high_precision(data):
+    global high_precision_mode
+    enabled = data.get('enabled', False)
+    high_precision_mode = enabled
+    logger.info(f"Chế độ chính xác cao đã được {'bật' if enabled else 'tắt'}")
+    
+    # Gửi thông báo đến tất cả client
+    socketio.emit('high_precision_changed', {
+        'enabled': high_precision_mode
+    })
 
 # Khởi tạo dữ liệu và bắt đầu lập lịch thu thập
 with app.app_context():

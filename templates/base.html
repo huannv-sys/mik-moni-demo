@@ -33,6 +33,12 @@
                 </h1>
                 
                 <div class="d-flex align-items-center">
+                    <!-- Chỉ báo kết nối WebSocket -->
+                    <div id="socketStatus" class="connection-status offline me-2">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Offline</span>
+                    </div>
+                    
                     <select id="deviceSelect" class="form-select form-select-sm me-2" style="max-width: 200px;">
                         {% for device in devices %}
                         <option value="{{ device.id }}" {% if device.id == active_device %}selected{% endif %}>
@@ -52,6 +58,12 @@
                         <option value="120">2 phút</option>
                         <option value="300">5 phút</option>
                     </select>
+                    
+                    <!-- Chế độ thu thập dữ liệu chính xác cao -->
+                    <div class="form-check form-switch me-2">
+                        <input class="form-check-input" type="checkbox" id="highPrecisionMode">
+                        <label class="form-check-label small" for="highPrecisionMode">Chế độ chính xác cao</label>
+                    </div>
                     
                     <div id="refreshStatus" class="me-2 d-none"></div>
                     
@@ -239,14 +251,78 @@
         // Kết nối đến máy chủ Socket.IO
         const socket = io();
         
+        // Hàm cập nhật trạng thái kết nối Socket
+        function updateSocketStatus(isConnected) {
+            const statusElement = document.getElementById('socketStatus');
+            
+            if (isConnected) {
+                statusElement.className = 'connection-status online me-2';
+                statusElement.innerHTML = '<span class="status-dot"></span><span class="status-text">Online</span>';
+            } else {
+                statusElement.className = 'connection-status offline me-2';
+                statusElement.innerHTML = '<span class="status-dot"></span><span class="status-text">Offline</span>';
+                
+                // Tự động thử kết nối lại sau 5 giây khi mất kết nối
+                setTimeout(() => {
+                    if (!socket.connected) {
+                        console.log('Reconnecting to WebSocket server...');
+                        socket.connect();
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Xử lý chế độ chính xác cao
+        let highPrecisionMode = false;
+        const highPrecisionCheckbox = document.getElementById('highPrecisionMode');
+        
+        if (highPrecisionCheckbox) {
+            highPrecisionCheckbox.addEventListener('change', function() {
+                highPrecisionMode = this.checked;
+                
+                // Gửi thông tin chế độ chính xác cao lên server
+                if (socket.connected) {
+                    socket.emit('set_high_precision', {
+                        enabled: highPrecisionMode
+                    });
+                    
+                    // Hiển thị thông báo
+                    const toastHtml = `
+                        <div class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
+                            <div class="d-flex">
+                                <div class="toast-body">
+                                    Chế độ chính xác cao đã được ${highPrecisionMode ? 'bật' : 'tắt'}
+                                </div>
+                                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const toastContainer = document.getElementById('toastContainer');
+                    toastContainer.innerHTML += toastHtml;
+                    
+                    const toastElement = toastContainer.querySelector('.toast:last-child');
+                    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+                    toast.show();
+                }
+            });
+        }
+        
         // Lắng nghe sự kiện kết nối
         socket.on('connect', function() {
             console.log('Connected to WebSocket server');
+            updateSocketStatus(true);
+            
+            // Gửi ngay lập tức trạng thái chế độ chính xác cao
+            if (highPrecisionCheckbox && highPrecisionCheckbox.checked) {
+                socket.emit('set_high_precision', {
+                    enabled: true
+                });
+            }
         });
         
         // Lắng nghe sự kiện network_speeds
         socket.on('network_speeds', function(data) {
-            // Hiện tại chỉ log ra console, sẽ xử lý trong file JavaScript riêng
             console.log('Received network speed data:', data);
             
             // Phát sự kiện để các trang con có thể xử lý
@@ -256,7 +332,11 @@
         // Xử lý ngắt kết nối
         socket.on('disconnect', function() {
             console.log('Disconnected from WebSocket server');
+            updateSocketStatus(false);
         });
+        
+        // Ban đầu, giả định là đang offline cho đến khi kết nối thành công
+        updateSocketStatus(false);
     </script>
     
     <!-- Update server time -->
