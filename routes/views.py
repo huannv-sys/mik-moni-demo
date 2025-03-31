@@ -170,7 +170,8 @@ def sites():
     for device in DataStore.devices.values():
         if device.site_id not in devices_by_site:
             devices_by_site[device.site_id] = []
-        devices_by_site[device.site_id].append(device)
+        if device and hasattr(device, 'id'):  # Kiểm tra device hợp lệ
+            devices_by_site[device.site_id].append(device)
     
     return render_template('sites.html', 
                           page='sites', 
@@ -264,11 +265,12 @@ def site_devices(site_id):
         devices.append(device)
     
     # Tính số thiết bị đang online và offline
-    online_count = sum(1 for device in devices if device.last_connected is not None)
+    online_count = sum(1 for device in devices if device and hasattr(device, 'last_connected') and device.last_connected is not None)
     offline_count = len(devices) - online_count
     
     # Đếm số cảnh báo của thiết bị trong site này
-    alerts_count = sum(1 for alert in DataStore.alerts if alert.device_id in [d.id for d in devices] and alert.active)
+    device_ids = [d.id for d in devices if d and hasattr(d, 'id')]
+    alerts_count = sum(1 for alert in DataStore.alerts if alert.device_id in device_ids and alert.active)
     
     return render_template('site_devices.html',
                           page='sites',
