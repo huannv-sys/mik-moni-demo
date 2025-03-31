@@ -1137,5 +1137,27 @@ function resolveAlert(alertId) {
     });
 }
 
+// Format speed in bytes per second to human-readable form
+function formatSpeed(bytesPerSecond) {
+    if (bytesPerSecond === undefined || bytesPerSecond === null) return '-';
+    
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s'];
+    let value = bytesPerSecond;
+    let unitIndex = 0;
+    
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+    
+    // For very small values, show at least 0.01
+    if (value > 0 && value < 0.01) {
+        return '< 0.01 ' + units[unitIndex];
+    }
+    
+    // Format with up to 2 decimal places
+    return value.toFixed(2) + ' ' + units[unitIndex];
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initDashboard);

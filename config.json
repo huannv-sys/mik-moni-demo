@@ -9,7 +9,21 @@
       "enabled": true
     }
   ],
-  "devices": [],
+  "devices": [
+    {
+      "id": "0c11bc07-f946-4030-b085-cd21bc77515d",
+      "name": "nha",
+      "host": "1.54.179.248",
+      "site_id": "default",
+      "port": 8728,
+      "username": "admin",
+      "password": "Ictech123$",
+      "enabled": true,
+      "use_ssl": false,
+      "location": "thi\u1ec7u nguy\u00ean",
+      "comment": "test"
+    }
+  ],
   "refresh_interval": 60,
   "interface_history_points": 288,
   "system_history_points": 288,
