@@ -2,7 +2,7 @@
 
 # Script cài đặt ứng dụng giám sát MikroTik
 # Dành cho hệ thống Ubuntu
-# Tác giả: Replit
+# Phiên bản dành cho ICTECH.VN
 
 # Kiểm tra quyền root
 if [ "$(id -u)" != "0" ]; then
@@ -118,6 +118,48 @@ echo "8. Cấu hình quyền truy cập..."
 chown -R $APP_USER:$APP_USER $APP_DIR
 chmod -R 755 $APP_DIR
 
+# Xóa các thiết bị demo và sử dụng cấu hình mặc định sạch
+echo "8.1. Đặt lại cấu hình mặc định không có thiết bị demo..."
+if [ -f "$APP_DIR/clean_devices.py" ]; then
+    cd "$APP_DIR"
+    python3 clean_devices.py --reset
+    echo "Đã đặt lại cấu hình sử dụng clean_devices.py"
+elif [ -f "$APP_DIR/default_config.json" ]; then
+    cp "$APP_DIR/default_config.json" "$APP_DIR/config.json"
+    echo "Đã sử dụng cấu hình mặc định sạch từ default_config.json"
+else
+    # Tạo cấu hình mặc định sạch
+    cat > "$APP_DIR/config.json" << EOL
+{
+  "sites": [
+    {
+      "id": "default",
+      "name": "ICTECH.VN",
+      "description": "Site mặc định dành cho ICTECH.VN",
+      "location": "",
+      "contact": "",
+      "enabled": true
+    }
+  ],
+  "devices": [],
+  "refresh_interval": 60,
+  "interface_history_points": 288,
+  "system_history_points": 288,
+  "thresholds": {
+    "cpu_load": 80,
+    "memory_usage": 80,
+    "disk_usage": 80,
+    "interface_usage": 80
+  },
+  "use_ssl": true,
+  "connection_timeout": 10,
+  "connection_retries": 2,
+  "retry_delay": 1
+}
+EOL
+    echo "Đã tạo file cấu hình mặc định mới không có thiết bị demo"
+fi
+
 # Tạo tệp cấu hình Gunicorn
 echo "9. Tạo cấu hình Gunicorn..."
 cat > $APP_DIR/gunicorn_config.py << EOL
@@ -185,7 +227,16 @@ echo "13. Kiểm tra trạng thái dịch vụ..."
 sleep 5
 supervisorctl status $APP_SERVICE
 
-# Phần này đã được xử lý ở trên
+# Cấu hình tường lửa tự động
+echo "14. Cấu hình tường lửa..."
+if [ -f "$APP_DIR/open_firewall.sh" ]; then
+    echo "Thực thi script cấu hình tường lửa..."
+    chmod +x "$APP_DIR/open_firewall.sh"
+    bash "$APP_DIR/open_firewall.sh"
+else
+    echo "Không tìm thấy script cấu hình tường lửa. Bỏ qua bước này."
+    echo "Bạn có thể chạy thủ công script later bằng cách: sudo $APP_DIR/open_firewall.sh"
+fi
 
 echo ""
 echo "===== Cài đặt hoàn tất ====="

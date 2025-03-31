@@ -131,5 +131,62 @@ def main():
         else:
             print("Lựa chọn không hợp lệ. Vui lòng chọn từ 1-4.")
 
+def run_clean_from_cli():
+    """Chạy làm sạch từ dòng lệnh"""
+    import argparse
+    parser = argparse.ArgumentParser(description='Công cụ làm sạch cấu hình MikroTik Monitor')
+    parser.add_argument('--clean-all', action='store_true', help='Xóa tất cả thiết bị demo/test và sửa lỗi sites')
+    parser.add_argument('--clean-devices', action='store_true', help='Chỉ xóa thiết bị demo/test')
+    parser.add_argument('--fix-sites', action='store_true', help='Chỉ sửa lỗi sites')
+    parser.add_argument('--reset', action='store_true', help='Đặt lại về cấu hình trắng ban đầu')
+    
+    args = parser.parse_args()
+    
+    if args.reset:
+        # Tạo cấu hình trắng với một site mặc định và không có thiết bị
+        config = {
+            "sites": [
+                {
+                    "id": "default",
+                    "name": "ICTECH.VN",
+                    "description": "Site mặc định dành cho ICTECH.VN",
+                    "location": "",
+                    "contact": "",
+                    "enabled": True
+                }
+            ],
+            "devices": [],
+            "refresh_interval": 60,
+            "interface_history_points": 288,
+            "system_history_points": 288,
+            "thresholds": {
+                "cpu_load": 80,
+                "memory_usage": 80,
+                "disk_usage": 80,
+                "interface_usage": 80
+            },
+            "use_ssl": True,
+            "connection_timeout": 10,
+            "connection_retries": 2,
+            "retry_delay": 1
+        }
+        save_config(config)
+        print("Đã đặt lại về cấu hình mặc định không có thiết bị.")
+        return
+    
+    if args.clean_all or (not args.clean_devices and not args.fix_sites):
+        clean_devices()
+        repair_sites()
+    else:
+        if args.clean_devices:
+            clean_devices()
+        if args.fix_sites:
+            repair_sites()
+
 if __name__ == "__main__":
-    main()
+    # Kiểm tra xem có đối số dòng lệnh hay không
+    import sys
+    if len(sys.argv) > 1:
+        run_clean_from_cli()
+    else:
+        main()
