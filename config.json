@@ -1,4 +1,22 @@
 {
+  "sites": [
+    {
+      "id": "default",
+      "name": "Site m\u1eb7c \u0111\u1ecbnh",
+      "description": "Site m\u1eb7c \u0111\u1ecbnh t\u1ef1 \u0111\u1ed9ng t\u1ea1o",
+      "location": "",
+      "contact": "",
+      "enabled": true
+    },
+    {
+      "id": "81ee409a-11f4-4368-8a29-9bf9175196cb",
+      "name": "home",
+      "description": "test",
+      "location": "thi\u1ec7u nguy\u00ean",
+      "contact": "mr.huan",
+      "enabled": true
+    }
+  ],
   "devices": [
     {
       "id": "nha_1",
@@ -9,6 +27,21 @@
       "password": "Ictech123$",
       "enabled": true,
       "use_ssl": false
+    },
+    {
+      "id": null,
+      "name": "CIG SHANGHAI CO LTD - :77:A8",
+      "host": "192.168.1.1",
+      "mac_address": "EC:84:B4:F0:77:A8",
+      "site_id": "default",
+      "port": 8728,
+      "username": "admin",
+      "password": "",
+      "enabled": false,
+      "use_ssl": false,
+      "vendor": "CIG SHANGHAI CO LTD",
+      "device_type": "Kh\u00e1c",
+      "comment": "Ph\u00e1t hi\u1ec7n t\u1ef1 \u0111\u1ed9ng t\u1eeb arp v\u00e0o 31/03/2025 17:23:22"
     }
   ],
   "refresh_interval": 60,

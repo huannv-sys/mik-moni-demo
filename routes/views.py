@@ -118,7 +118,20 @@ def sites():
                 'enabled': request.form.get('enabled') == 'on'
             }
             
+            # Lưu vào config
             config.add_site(site)
+            
+            # Cập nhật lại DataStore để thấy ngay lập tức
+            site_obj = Site(
+                id=site['id'],
+                name=site['name'],
+                description=site['description'],
+                location=site['location'],
+                contact=site['contact'],
+                enabled=site['enabled']
+            )
+            DataStore.sites[site['id']] = site_obj
+            
             flash('Site đã được lưu thành công', 'success')
             return redirect(url_for('views.sites'))
         
@@ -127,12 +140,30 @@ def sites():
             site_id = request.form.get('site_id')
             if site_id:
                 config.remove_site(site_id)
+                # Cập nhật DataStore
+                if site_id in DataStore.sites:
+                    del DataStore.sites[site_id]
                 flash('Site đã được xóa thành công', 'success')
             
             return redirect(url_for('views.sites'))
     
-    # GET request
-    sites_list = list(DataStore.sites.values())
+    # GET request - Đọc trực tiếp từ config để đảm bảo thông tin cập nhật
+    sites_data = config.get_sites()
+    sites_list = []
+    
+    # Cập nhật DataStore từ config
+    DataStore.sites = {}
+    for site_data in sites_data:
+        site = Site(
+            id=site_data.get('id', ''),
+            name=site_data.get('name', ''),
+            description=site_data.get('description', ''),
+            location=site_data.get('location', ''),
+            contact=site_data.get('contact', ''),
+            enabled=site_data.get('enabled', True)
+        )
+        DataStore.sites[site.id] = site
+        sites_list.append(site)
     
     # Group devices by site
     devices_by_site = {}
@@ -201,8 +232,36 @@ def site_devices(site_id):
             
             return redirect(url_for('views.site_devices', site_id=site_id))
     
-    # Lấy danh sách thiết bị thuộc site này
-    devices = [device for device in DataStore.devices.values() if device.site_id == site_id]
+    # Đọc danh sách thiết bị từ config để đồng bộ với thay đổi gần nhất
+    devices_data = config.get_devices_by_site(site_id)
+    devices = []
+    
+    # Cập nhật DataStore và tạo danh sách thiết bị
+    for device_data in devices_data:
+        device_id = device_data.get('id', '')
+        
+        # Kiểm tra nếu thiết bị đã có trong DataStore thì dùng lại thông tin hiện có
+        if device_id in DataStore.devices:
+            device = DataStore.devices[device_id]
+        else:
+            # Nếu chưa có, tạo đối tượng Device mới
+            device = Device(
+                id=device_id,
+                name=device_data.get('name', ''),
+                host=device_data.get('host', ''),
+                site_id=site_id,
+                port=device_data.get('port', 8728),
+                username=device_data.get('username', 'admin'),
+                password=device_data.get('password', ''),
+                enabled=device_data.get('enabled', True),
+                use_ssl=device_data.get('use_ssl', False),
+                location=device_data.get('location', ''),
+                comment=device_data.get('comment', ''),
+                auto_detected=device_data.get('auto_detected', False)
+            )
+            DataStore.devices[device_id] = device
+        
+        devices.append(device)
     
     # Tính số thiết bị đang online và offline
     online_count = sum(1 for device in devices if device.last_connected is not None)

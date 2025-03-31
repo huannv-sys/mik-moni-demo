@@ -35,13 +35,19 @@
                         <tbody>
                             {% for site in sites %}
                             <tr>
-                                <td>{{ site.name }}</td>
+                                <td>
+                                    <a href="{{ url_for('views.site_devices', site_id=site.id) }}" class="fw-bold text-decoration-none">
+                                        {{ site.name }}
+                                    </a>
+                                </td>
                                 <td>{{ site.description }}</td>
                                 <td>{{ site.location }}</td>
                                 <td>{{ site.contact }}</td>
                                 <td>
                                     {% set device_count = devices_by_site[site.id]|length if site.id in devices_by_site else 0 %}
-                                    <span class="badge bg-info">{{ device_count }} thiết bị</span>
+                                    <a href="{{ url_for('views.site_devices', site_id=site.id) }}" class="badge bg-info text-decoration-none">
+                                        {{ device_count }} thiết bị
+                                    </a>
                                 </td>
                                 <td>
                                     {% if site.enabled %}

@@ -97,18 +97,28 @@
                         <tbody>
                             {% for device in devices %}
                             <tr>
-                                <td>{{ device.name }}</td>
-                                <td>{{ device.host }}</td>
+                                <td>
+                                    <a href="{{ url_for('views.dashboard', device=device.id) }}" class="fw-bold text-decoration-none">
+                                        {{ device.name }}
+                                    </a>
+                                    {% if device.vendor %}
+                                    <div class="small text-muted">{{ device.vendor }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ device.host }}:{{ device.port }}</td>
                                 <td>{{ device.location or '' }}</td>
                                 <td>
                                     {% if device.enabled %}
                                         {% if device.last_connected %}
-                                        <span class="badge bg-success">Đang hoạt động</span>
+                                        <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Đang hoạt động</span>
                                         {% else %}
-                                        <span class="badge bg-warning">Đang kết nối</span>
+                                        <span class="badge bg-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>Đang kết nối</span>
+                                        {% endif %}
+                                        {% if device.error_message %}
+                                        <div class="small text-danger mt-1">{{ device.error_message }}</div>
                                         {% endif %}
                                     {% else %}
-                                        <span class="badge bg-secondary">Vô hiệu</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-slash-circle me-1"></i>Vô hiệu</span>
                                     {% endif %}
                                 </td>
                                 <td>
