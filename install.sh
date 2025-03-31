@@ -16,7 +16,8 @@ APP_DIR="/opt/mikrotik-monitor"
 APP_USER="mikrotik"
 APP_SERVICE="mikrotik-monitor"
 PYTHON_VERSION="3.8"
-GIT_REPO="https://github.com/yourusername/mikrotik-monitor.git"
+DOWNLOAD_URL="https://github.com/yourusername/mikrotik-monitor/archive/refs/heads/main.zip"
+SOURCE_DIR="$(pwd)"
 
 echo "===== Bắt đầu cài đặt Ứng dụng Giám sát MikroTik ====="
 echo ""
@@ -27,7 +28,7 @@ apt update && apt upgrade -y
 
 # Cài đặt các gói cần thiết
 echo "2. Cài đặt các gói cần thiết..."
-apt install -y python3 python3-pip python3-venv git supervisor nginx
+apt install -y python3 python3-pip python3-venv supervisor nginx wget unzip
 
 # Tạo người dùng hệ thống
 echo "3. Tạo người dùng hệ thống cho ứng dụng..."
@@ -53,18 +54,33 @@ fi
 
 # Tạo thư mục ứng dụng
 mkdir -p $APP_DIR
-cd $APP_DIR
 
-# Tải mã nguồn từ GitHub hoặc sao chép từ thư mục hiện tại
-echo "5. Tải mã nguồn ứng dụng..."
-if [ -z "$GIT_REPO" ]; then
+# Sao chép hoặc tải mã nguồn vào thư mục ứng dụng
+echo "5. Cài đặt mã nguồn ứng dụng..."
+
+# Kiểm tra có tập tin zip trong thư mục hiện tại không
+if ls ./*.zip >/dev/null 2>&1; then
+    # Sử dụng tập tin ZIP có sẵn
+    ZIP_FILE=$(ls ./*.zip | head -n 1)
+    echo "Phát hiện file nén: $ZIP_FILE"
+    echo "Giải nén từ file..."
+    
+    TEMP_DIR=$(mktemp -d)
+    unzip -q "$ZIP_FILE" -d "$TEMP_DIR"
+    
+    # Nếu giải nén tạo ra một thư mục con duy nhất, sử dụng nội dung thư mục đó
+    SUB_DIR=$(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+    if [ -n "$SUB_DIR" ]; then
+        cp -r "$SUB_DIR"/* $APP_DIR/
+    else
+        cp -r "$TEMP_DIR"/* $APP_DIR/
+    fi
+    
+    rm -rf "$TEMP_DIR"
+else
     # Sao chép từ thư mục hiện tại
     echo "Sao chép mã nguồn từ thư mục hiện tại..."
-    cp -r $(dirname $(readlink -f $0))/* $APP_DIR/
-else
-    # Tải từ GitHub
-    echo "Tải mã nguồn từ GitHub..."
-    git clone $GIT_REPO $APP_DIR
+    cp -r "$SOURCE_DIR"/* $APP_DIR/
 fi
 
 # Thiết lập môi trường ảo Python
