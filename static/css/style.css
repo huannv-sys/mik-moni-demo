@@ -341,6 +341,26 @@ body {
     background-color: #dc3545;
 }
 
+/* Device offline alert styling */
+#deviceOfflineAlert {
+    border-left: 4px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+    border-radius: 4px;
+    animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+    0% {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+    50% {
+        background-color: rgba(220, 53, 69, 0.2);
+    }
+    100% {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+}
+
 /* Mini-chart styling */
 .mini-chart {
     width: 60px;

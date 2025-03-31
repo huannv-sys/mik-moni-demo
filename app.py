@@ -139,6 +139,27 @@ def handle_connect():
 def handle_disconnect():
     logger.info(f"Client disconnected from websocket")
 
+# Sự kiện khi client tham gia vào phòng của thiết bị
+@socketio.on('join_device_room')
+def handle_join_device_room(data):
+    device_id = data.get('device_id')
+    if device_id:
+        # Gửi thông báo lỗi nếu thiết bị không tồn tại hoặc không thể kết nối
+        if device_id in DataStore.devices:
+            device = DataStore.devices[device_id]
+            logger.info(f"Client listening for device: {device.name}")
+            
+            # Kiểm tra trạng thái kết nối của thiết bị
+            if device.error_message:
+                # Gửi lỗi về thiết bị cho client
+                socketio.emit('device_error', {
+                    'device_id': device_id,
+                    'message': device.error_message
+                })
+                logger.warning(f"Sent device error for {device.name}: {device.error_message}")
+        else:
+            logger.warning(f"Client tried to join non-existent device room: {device_id}")
+
 # Sự kiện khi client thay đổi chế độ chính xác cao
 @socketio.on('set_high_precision')
 def handle_high_precision(data):
