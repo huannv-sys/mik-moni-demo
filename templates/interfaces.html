@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Interfaces - Mikrotik Monitoring{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Network Interfaces</h2>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Interfaces List -->
+    <div class="col-12">
+        <div class="card" id="interfacesListCard">
+            <div class="card-body text-center d-flex align-items-center justify-content-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Interface Charts -->
+    <div class="col-12">
+        <div class="card" id="interfacesChartsCard">
+            <div class="card-body text-center d-flex align-items-center justify-content-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/interfaces.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,274 @@
+/* 
+* Mikrotik Monitoring Dashboard Styles
+* Custom styles for the application
+*/
+
+/* Base Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    height: 100%;
+    position: fixed;
+    z-index: 100;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-link.active {
+    background-color: rgba(13, 110, 253, 0.3);
+    color: white;
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+}
+
+/* Header Styles */
+.mikrotik-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dashboard Styles */
+.card {
+    margin-bottom: 1rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    background-color: rgba(33, 37, 41, 0.85);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.card-subtitle {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Interface Status */
+.signal-bars {
+    display: flex;
+    align-items: flex-end;
+    height: 15px;
+    gap: 2px;
+}
+
+.signal-bar {
+    width: 5px;
+    background-color: rgba(108, 117, 125, 0.3);
+    border-radius: 1px;
+}
+
+.signal-bar.active {
+    background-color: #28a745;
+}
+
+/* Alerts Styles */
+.alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.alert-item {
+    border-radius: 0.25rem;
+    border-left: 4px solid;
+    background-color: rgba(33, 37, 41, 0.8);
+    padding: 0.75rem 1rem;
+}
+
+.alert-item.info {
+    border-left-color: var(--bs-info);
+}
+
+.alert-item.warning {
+    border-left-color: var(--bs-warning);
+}
+
+.alert-item.danger {
+    border-left-color: var(--bs-danger);
+}
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.alert-severity {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.alert-severity.info {
+    background-color: rgba(13, 202, 240, 0.2);
+    color: #0dcaf0;
+}
+
+.alert-severity.warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.alert-severity.danger {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.alert-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.alert-message {
+    margin-bottom: 0.5rem;
+}
+
+.alert-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.alert-device {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.alert-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Log Styles */
+.log-topic-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* DataTables overrides */
+.dataTables_wrapper .dataTables_length, 
+.dataTables_wrapper .dataTables_filter, 
+.dataTables_wrapper .dataTables_info, 
+.dataTables_wrapper .dataTables_processing, 
+.dataTables_wrapper .dataTables_paginate {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1rem;
+}
+
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    background-color: rgba(33, 37, 41, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: rgba(13, 110, 253, 0.3) !important;
+    border: 1px solid rgba(13, 110, 253, 0.5) !important;
+    color: white !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
+
+/* Utility Classes */
+.refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Toast Container */
+#toastContainer {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1050;
+}
+
+/* Settings Form Styles */
+.settings-section {
+    margin-bottom: 2rem;
+}
+
+.settings-form label {
+    font-weight: 500;
+}
+
+/* Responsive Styles */
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: static;
+        height: auto;
+        width: 100%;
+    }
+    
+    .sidebar .nav {
+        flex-direction: row !important;
+        overflow-x: auto;
+        padding: 0.5rem 0;
+    }
+    
+    .sidebar .nav-item {
+        margin-right: 0.5rem;
+    }
+    
+    .sidebar .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .alert-filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .alert-filters .btn-group {
+        width: 100%;
+        margin-left: 0 !important;
+    }
+}

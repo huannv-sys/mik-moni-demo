@@ -1,0 +1,22 @@
+{
+  "devices": [
+    {
+      "id": "default",
+      "name": "My Mikrotik",
+      "host": "192.168.88.1",
+      "port": 8728,
+      "username": "admin",
+      "password": "",
+      "enabled": true
+    }
+  ],
+  "refresh_interval": 60,
+  "interface_history_points": 288,
+  "system_history_points": 288,
+  "thresholds": {
+    "cpu_load": 80,
+    "memory_usage": 80,
+    "disk_usage": 80,
+    "interface_usage": 80
+  }
+}
