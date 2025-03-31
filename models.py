@@ -74,6 +74,8 @@ class ArpEntry:
     interface: str
     dynamic: bool
     complete: bool
+    vendor: str = ''
+    device_type: str = ''
     timestamp: datetime = field(default_factory=datetime.now)
 
 @dataclass
@@ -85,6 +87,8 @@ class DHCPLease:
     hostname: str = ''
     status: str = ''
     expires_after: str = ''
+    vendor: str = ''
+    device_type: str = ''
     timestamp: datetime = field(default_factory=datetime.now)
 
 @dataclass
@@ -109,6 +113,8 @@ class WirelessClient:
     tx_bytes: int = 0
     rx_bytes: int = 0
     uptime: str = ''
+    vendor: str = ''
+    device_type: str = ''
     timestamp: datetime = field(default_factory=datetime.now)
 
 @dataclass
@@ -128,6 +134,8 @@ class CapsmanRegistration:
     channel: str = ''
     comment: str = ''
     status: str = ''
+    vendor: str = ''
+    device_type: str = ''
     timestamp: datetime = field(default_factory=datetime.now)
 
 @dataclass

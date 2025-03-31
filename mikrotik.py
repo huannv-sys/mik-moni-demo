@@ -316,6 +316,8 @@ class MikrotikAPI:
     
     def collect_arp(self, device_id: str) -> Optional[List[ArpEntry]]:
         """Collect ARP entries from a device"""
+        from mac_vendor import mac_vendor_lookup
+        
         api = self.get_api(device_id)
         if not api:
             return None
@@ -326,13 +328,27 @@ class MikrotikAPI:
             
             entries = []
             for entry_data in arp_data:
+                mac_address = entry_data.get('mac-address', '')
+                # Tìm thông tin nhà sản xuất từ MAC address
+                vendor = ""
+                device_type = ""
+                if mac_address:
+                    try:
+                        vendor = mac_vendor_lookup.lookup(mac_address) or ""
+                        if vendor:
+                            device_type = mac_vendor_lookup.get_device_type(vendor)
+                    except Exception as e:
+                        logger.warning(f"Error looking up vendor for MAC {mac_address}: {e}")
+                
                 entry = ArpEntry(
                     device_id=device_id,
                     address=entry_data.get('address', ''),
-                    mac_address=entry_data.get('mac-address', ''),
+                    mac_address=mac_address,
                     interface=entry_data.get('interface', ''),
                     dynamic=entry_data.get('dynamic', 'false') == 'true',
                     complete=entry_data.get('complete', 'false') == 'true',
+                    vendor=vendor,
+                    device_type=device_type,
                     timestamp=datetime.now()
                 )
                 entries.append(entry)
@@ -346,6 +362,8 @@ class MikrotikAPI:
     
     def collect_dhcp_leases(self, device_id: str) -> Optional[List[DHCPLease]]:
         """Collect DHCP leases from a device"""
+        from mac_vendor import mac_vendor_lookup
+        
         api = self.get_api(device_id)
         if not api:
             return None
@@ -356,14 +374,28 @@ class MikrotikAPI:
             
             leases = []
             for lease in lease_data:
+                mac_address = lease.get('mac-address', '')
+                # Tìm thông tin nhà sản xuất từ MAC address
+                vendor = ""
+                device_type = ""
+                if mac_address:
+                    try:
+                        vendor = mac_vendor_lookup.lookup(mac_address) or ""
+                        if vendor:
+                            device_type = mac_vendor_lookup.get_device_type(vendor)
+                    except Exception as e:
+                        logger.warning(f"Error looking up vendor for MAC {mac_address}: {e}")
+                
                 dhcp_lease = DHCPLease(
                     device_id=device_id,
                     address=lease.get('address', ''),
-                    mac_address=lease.get('mac-address', ''),
+                    mac_address=mac_address,
                     client_id=lease.get('client-id', ''),
                     hostname=lease.get('host-name', ''),
                     status=lease.get('status', ''),
                     expires_after=lease.get('expires-after', ''),
+                    vendor=vendor,
+                    device_type=device_type,
                     timestamp=datetime.now()
                 )
                 leases.append(dhcp_lease)
@@ -408,6 +440,8 @@ class MikrotikAPI:
     
     def collect_wireless_clients(self, device_id: str) -> Optional[List[WirelessClient]]:
         """Collect wireless clients from a device"""
+        from mac_vendor import mac_vendor_lookup
+        
         api = self.get_api(device_id)
         if not api:
             return None
@@ -418,16 +452,30 @@ class MikrotikAPI:
             
             clients = []
             for client_data in clients_data:
+                mac_address = client_data.get('mac-address', '')
+                # Tìm thông tin nhà sản xuất từ MAC address
+                vendor = ""
+                device_type = ""
+                if mac_address:
+                    try:
+                        vendor = mac_vendor_lookup.lookup(mac_address) or ""
+                        if vendor:
+                            device_type = mac_vendor_lookup.get_device_type(vendor)
+                    except Exception as e:
+                        logger.warning(f"Error looking up vendor for MAC {mac_address}: {e}")
+                
                 client = WirelessClient(
                     device_id=device_id,
                     interface=client_data.get('interface', ''),
-                    mac_address=client_data.get('mac-address', ''),
+                    mac_address=mac_address,
                     signal_strength=int(client_data.get('signal-strength', 0)),
                     tx_rate=int(client_data.get('tx-rate', 0)),
                     rx_rate=int(client_data.get('rx-rate', 0)),
                     tx_bytes=int(client_data.get('tx-bytes', 0)),
                     rx_bytes=int(client_data.get('rx-bytes', 0)),
                     uptime=client_data.get('uptime', ''),
+                    vendor=vendor,
+                    device_type=device_type,
                     timestamp=datetime.now()
                 )
                 clients.append(client)
@@ -441,6 +489,8 @@ class MikrotikAPI:
     
     def collect_capsman_registrations(self, device_id: str) -> Optional[List[CapsmanRegistration]]:
         """Collect CAPsMAN registrations from a device"""
+        from mac_vendor import mac_vendor_lookup
+        
         api = self.get_api(device_id)
         if not api:
             return None
@@ -458,12 +508,26 @@ class MikrotikAPI:
             
             registrations = []
             for reg_data in registrations_data:
+                mac_address = reg_data.get('mac-address', '')
+                remote_ap_mac = reg_data.get('remote-cap-mac', '')
+                
+                # Tìm thông tin nhà sản xuất từ MAC address
+                vendor = ""
+                device_type = ""
+                if mac_address:
+                    try:
+                        vendor = mac_vendor_lookup.lookup(mac_address) or ""
+                        if vendor:
+                            device_type = mac_vendor_lookup.get_device_type(vendor)
+                    except Exception as e:
+                        logger.warning(f"Error looking up vendor for MAC {mac_address}: {e}")
+                
                 registration = CapsmanRegistration(
                     device_id=device_id,
                     interface=reg_data.get('interface', ''),
                     radio_name=reg_data.get('radio-name', ''),
-                    mac_address=reg_data.get('mac-address', ''),
-                    remote_ap_mac=reg_data.get('remote-cap-mac', ''),
+                    mac_address=mac_address,
+                    remote_ap_mac=remote_ap_mac,
                     signal_strength=int(reg_data.get('signal-strength', 0)),
                     tx_rate=int(reg_data.get('tx-rate', 0)),
                     rx_rate=int(reg_data.get('rx-rate', 0)),
@@ -474,6 +538,8 @@ class MikrotikAPI:
                     channel=reg_data.get('channel', ''),
                     comment=reg_data.get('comment', ''),
                     status=reg_data.get('status', ''),
+                    vendor=vendor,
+                    device_type=device_type,
                     timestamp=datetime.now()
                 )
                 registrations.append(registration)
@@ -493,17 +559,53 @@ class MikrotikAPI:
             return None
         
         try:
-            resource = api.get_resource('/log')
-            # Get the latest logs
-            # Use string value for limit to avoid 'int' object has no attribute 'encode' error
-            log_data = resource.get(limit=str(limit))
+            # Thử nhiều cách khác nhau để lấy logs tùy theo phiên bản RouterOS
+            try:
+                # Cách 1: Thông qua API đường dẫn /log (thường dùng cho RouterOS 6.x)
+                resource = api.get_resource('/log')
+                # Sử dụng tham số là string thay vì int để tránh lỗi 'int' object has no attribute 'encode'
+                log_data = resource.get(limit=str(limit))
+            except RouterOsApiError:
+                # Cách 2: Thông qua API đường dẫn /system/log (cho một số phiên bản mới hơn)
+                try:
+                    resource = api.get_resource('/system/log')
+                    log_data = resource.get(numbers=f"0-{limit}")
+                except RouterOsApiError:
+                    # Cách 3: Một cách nữa là thử tìm trong log buffer
+                    try:
+                        resource = api.get_resource('/system/logging/action')
+                        actions = resource.get(name="memory")
+                        if not actions:
+                            logger.warning(f"No memory logging action found on device {device_id}")
+                            # Tạo một danh sách rỗng để tránh lỗi
+                            DataStore.logs[device_id] = []
+                            return []
+                        # Lấy logs từ memory buffer
+                        resource = api.get_resource('/log/print')
+                        log_data = resource.call(count=str(limit))
+                    except RouterOsApiError as e:
+                        logger.error(f"Could not access any log API on device {device_id}: {e}")
+                        # Tạo một danh sách rỗng để tránh lỗi
+                        DataStore.logs[device_id] = []
+                        return []
             
+            # Xử lý dữ liệu logs
             logs = []
             for log in log_data:
-                # Convert all values to string to ensure type safety
+                # Chuyển đổi tất cả các giá trị thành chuỗi để đảm bảo tính nhất quán
                 time_val = str(log.get('time', '')) if log.get('time') is not None else ''
-                topics_val = str(log.get('topics', '')) if log.get('topics') is not None else ''
-                message_val = str(log.get('message', '')) if log.get('message') is not None else ''
+                
+                # Xử lý trường topics khác nhau tùy thuộc vào phiên bản RouterOS
+                topics_val = ''
+                if log.get('topics') is not None:
+                    topics_val = str(log.get('topics', ''))
+                elif log.get('topic') is not None:
+                    topics_val = str(log.get('topic', ''))
+                
+                # Xử lý trường message
+                message_val = ''
+                if log.get('message') is not None:
+                    message_val = str(log.get('message', ''))
                 
                 log_entry = LogEntry(
                     device_id=device_id,
@@ -514,15 +616,23 @@ class MikrotikAPI:
                 )
                 logs.append(log_entry)
             
+            # Nếu không có logs, log một cảnh báo nhưng vẫn trả về danh sách rỗng
+            if not logs:
+                logger.warning(f"No logs found on device {device_id}")
+                
             DataStore.logs[device_id] = logs
             return logs
             
         except RouterOsApiError as e:
             logger.error(f"RouterOS API error collecting logs from {device_id}: {e}")
-            return None
+            # Tạo một danh sách rỗng để tránh lỗi
+            DataStore.logs[device_id] = []
+            return []
         except Exception as e:
             logger.error(f"Error collecting logs from {device_id}: {e}")
-            return None
+            # Tạo một danh sách rỗng để tránh lỗi
+            DataStore.logs[device_id] = []
+            return []
     
     def collect_all_data(self, device_id: str) -> Dict[str, bool]:
         """Collect all data from a device"""
