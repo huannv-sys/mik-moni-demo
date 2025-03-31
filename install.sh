@@ -16,7 +16,6 @@ APP_DIR="/opt/mikrotik-monitor"
 APP_USER="mikrotik"
 APP_SERVICE="mikrotik-monitor"
 PYTHON_VERSION="3.8"
-DOWNLOAD_URL="https://github.com/yourusername/mikrotik-monitor/archive/refs/heads/main.zip"
 SOURCE_DIR="$(pwd)"
 
 echo "===== Bắt đầu cài đặt Ứng dụng Giám sát MikroTik ====="
