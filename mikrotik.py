@@ -34,37 +34,84 @@ class MikrotikAPI:
             # Already connected
             return True, None
         
-        try:
-            connection = routeros_api.RouterOsApiPool(
-                host=device.host,
-                port=device.port,
-                username=device.username,
-                password=device.password,
-                plaintext_login=True
-            )
-            api = connection.get_api()
-            self.connections[device.id] = {
-                'connection': connection,
-                'api': api
-            }
-            device.last_connected = datetime.now()
-            device.error_message = None
-            DataStore.devices[device.id] = device
-            return True, None
-        except RouterOsApiConnectionError as e:
-            error_msg = f"Failed to connect to {device.host}: {str(e)}"
-            logger.error(error_msg)
-            device.error_message = error_msg
-            device.last_connected = None
-            DataStore.devices[device.id] = device
-            return False, error_msg
-        except Exception as e:
-            error_msg = f"Unexpected error connecting to {device.host}: {str(e)}"
-            logger.error(error_msg)
-            device.error_message = error_msg
-            device.last_connected = None
-            DataStore.devices[device.id] = device
-            return False, error_msg
+        # Get global settings or use device-specific settings
+        global_use_ssl = config.load_config().get('use_ssl', False)
+        connection_timeout = config.load_config().get('connection_timeout', 10)
+        max_retries = config.load_config().get('connection_retries', 2)
+        retry_delay = config.load_config().get('retry_delay', 1)
+        
+        # Device-specific SSL setting takes precedence over global
+        use_ssl = device.use_ssl if hasattr(device, 'use_ssl') else global_use_ssl
+        
+        retry_count = 0
+        last_error = None
+        
+        while retry_count <= max_retries:
+            try:
+                # Add socket timeout to prevent hanging on unreachable hosts
+                socket.setdefaulttimeout(connection_timeout)
+                
+                logger.info(f"Connecting to {device.name} ({device.host}) on port {device.port}" + 
+                            f" with SSL {'enabled' if use_ssl else 'disabled'}")
+                
+                connection = routeros_api.RouterOsApiPool(
+                    host=device.host,
+                    port=device.port,
+                    username=device.username,
+                    password=device.password,
+                    plaintext_login=not use_ssl,
+                    use_ssl=use_ssl
+                )
+                
+                # Try to get the API connection
+                api = connection.get_api()
+                
+                # If successful, store the connection
+                self.connections[device.id] = {
+                    'connection': connection,
+                    'api': api
+                }
+                device.last_connected = datetime.now()
+                device.error_message = None
+                DataStore.devices[device.id] = device
+                
+                # Log successful connection
+                logger.info(f"Successfully connected to {device.name} ({device.host})")
+                
+                return True, None
+                
+            except RouterOsApiConnectionError as e:
+                last_error = f"Failed to connect to {device.host}: {str(e)}"
+                logger.error(last_error)
+                retry_count += 1
+                
+                if retry_count <= max_retries:
+                    logger.info(f"Retrying connection to {device.host} ({retry_count}/{max_retries}) in {retry_delay} second(s)")
+                    time.sleep(retry_delay)  # Wait before retrying
+                    
+            except socket.timeout:
+                last_error = f"Connection to {device.host} timed out after {connection_timeout} seconds"
+                logger.error(last_error)
+                retry_count += 1
+                
+                if retry_count <= max_retries:
+                    logger.info(f"Retrying connection to {device.host} ({retry_count}/{max_retries}) in {retry_delay} second(s)")
+                    time.sleep(retry_delay)  # Wait before retrying
+                    
+            except Exception as e:
+                last_error = f"Unexpected error connecting to {device.host}: {str(e)}"
+                logger.error(last_error)
+                retry_count += 1
+                
+                if retry_count <= max_retries:
+                    logger.info(f"Retrying connection to {device.host} ({retry_count}/{max_retries}) in {retry_delay} second(s)")
+                    time.sleep(retry_delay)  # Wait before retrying
+        
+        # If we got here, all retries failed
+        device.error_message = last_error
+        device.last_connected = None
+        DataStore.devices[device.id] = device
+        return False, last_error
     
     def disconnect(self, device_id: str) -> None:
         """Disconnect from a device"""
@@ -396,20 +443,27 @@ class MikrotikAPI:
         """Collect logs from a device"""
         api = self.get_api(device_id)
         if not api:
+            logger.error(f"Cannot collect logs: No API connection for device {device_id}")
             return None
         
         try:
             resource = api.get_resource('/log')
             # Get the latest logs
-            log_data = resource.get(limit=limit)
+            # Use string value for limit to avoid 'int' object has no attribute 'encode' error
+            log_data = resource.get(limit=str(limit))
             
             logs = []
             for log in log_data:
+                # Convert all values to string to ensure type safety
+                time_val = str(log.get('time', '')) if log.get('time') is not None else ''
+                topics_val = str(log.get('topics', '')) if log.get('topics') is not None else ''
+                message_val = str(log.get('message', '')) if log.get('message') is not None else ''
+                
                 log_entry = LogEntry(
                     device_id=device_id,
-                    time=log.get('time', ''),
-                    topics=log.get('topics', ''),
-                    message=log.get('message', ''),
+                    time=time_val,
+                    topics=topics_val,
+                    message=message_val,
                     timestamp=datetime.now()
                 )
                 logs.append(log_entry)
@@ -417,6 +471,9 @@ class MikrotikAPI:
             DataStore.logs[device_id] = logs
             return logs
             
+        except RouterOsApiError as e:
+            logger.error(f"RouterOS API error collecting logs from {device_id}: {e}")
+            return None
         except Exception as e:
             logger.error(f"Error collecting logs from {device_id}: {e}")
             return None

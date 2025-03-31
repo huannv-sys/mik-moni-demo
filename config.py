@@ -24,7 +24,12 @@ DEFAULT_CONFIG = {
         "memory_usage": 80,  # percentage
         "disk_usage": 80,  # percentage
         "interface_usage": 80  # percentage
-    }
+    },
+    # Connection settings
+    "use_ssl": False,  # Whether to use SSL for API connections
+    "connection_timeout": 10,  # Timeout in seconds for connection attempts
+    "connection_retries": 2,  # Number of retries for failed connections
+    "retry_delay": 1  # Delay in seconds between connection retries
 }
 
 CONFIG_FILE = 'config.json'

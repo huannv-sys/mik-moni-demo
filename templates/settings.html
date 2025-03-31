@@ -45,7 +45,8 @@
                                             data-device-port="{{ device.port }}"
                                             data-device-username="{{ device.username }}"
                                             data-device-password="{{ device.password }}"
-                                            data-device-enabled="{{ device.enabled }}">
+                                            data-device-enabled="{{ device.enabled }}"
+                                            data-device-use-ssl="{{ device.use_ssl|default(False) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDeviceModal" data-device-id="{{ device.id }}" data-device-name="{{ device.name }}">
@@ -102,6 +103,34 @@
                         </div>
                     </div>
                     
+                    <div class="settings-section mt-4">
+                        <h6 class="border-bottom pb-2 mb-3">Connection Settings</h6>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="useSSL" name="use_ssl" {% if current_config.use_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="useSSL">Use SSL for API connections</label>
+                            <div class="form-text">Enable secure connections to RouterOS API (requires SSL configured on RouterOS)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="connectionTimeout" class="form-label">Connection Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="connectionTimeout" name="connection_timeout" value="{{ current_config.connection_timeout }}" min="1" max="60">
+                            <div class="form-text">Timeout for connection attempts to devices</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="connectionRetries" class="form-label">Connection Retries</label>
+                            <input type="number" class="form-control" id="connectionRetries" name="connection_retries" value="{{ current_config.connection_retries }}" min="0" max="10">
+                            <div class="form-text">Number of times to retry connecting to a device after failure</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="retryDelay" class="form-label">Retry Delay (seconds)</label>
+                            <input type="number" class="form-control" id="retryDelay" name="retry_delay" value="{{ current_config.retry_delay }}" min="1" max="30">
+                            <div class="form-text">Delay between connection retry attempts</div>
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary">Save Settings</button>
                 </form>
             </div>
@@ -140,6 +169,12 @@
                         <label for="devicePassword" class="form-label">Password</label>
                         <input type="password" class="form-control" id="devicePassword" name="password">
                     </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="deviceUseSSL" name="use_ssl" {% if current_config.use_ssl %}checked{% endif %}>
+                        <label class="form-check-label" for="deviceUseSSL">Use SSL</label>
+                        <div class="form-text">Connect securely using SSL (requires SSL configured on RouterOS)</div>
+                    </div>
+                    
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="deviceEnabled" name="enabled" checked>
                         <label class="form-check-label" for="deviceEnabled">Enabled</label>
@@ -187,6 +222,12 @@
                         <input type="password" class="form-control" id="editDevicePassword" name="password" placeholder="Leave empty to keep current password">
                         <div class="form-text">Leave empty to keep current password</div>
                     </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editDeviceUseSSL" name="use_ssl" {% if current_config.use_ssl %}checked{% endif %}>
+                        <label class="form-check-label" for="editDeviceUseSSL">Use SSL</label>
+                        <div class="form-text">Connect securely using SSL (requires SSL configured on RouterOS)</div>
+                    </div>
+                    
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="editDeviceEnabled" name="enabled">
                         <label class="form-check-label" for="editDeviceEnabled">Enabled</label>
@@ -239,6 +280,7 @@
                 const devicePort = button.getAttribute('data-device-port');
                 const deviceUsername = button.getAttribute('data-device-username');
                 const deviceEnabled = button.getAttribute('data-device-enabled') === 'True';
+                const deviceUseSSL = button.getAttribute('data-device-use-ssl') === 'True';
                 
                 const modal = this;
                 modal.querySelector('#editDeviceId').value = deviceId;
@@ -248,6 +290,7 @@
                 modal.querySelector('#editDeviceUsername').value = deviceUsername;
                 modal.querySelector('#editDevicePassword').value = '';
                 modal.querySelector('#editDeviceEnabled').checked = deviceEnabled;
+                modal.querySelector('#editDeviceUseSSL').checked = deviceUseSSL;
             });
         }
         

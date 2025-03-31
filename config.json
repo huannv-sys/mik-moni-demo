@@ -1,12 +1,12 @@
 {
   "devices": [
     {
-      "id": "default",
-      "name": "My Mikrotik",
-      "host": "192.168.88.1",
+      "id": null,
+      "name": "nha",
+      "host": "1.54.179.248",
       "port": 8728,
       "username": "admin",
-      "password": "",
+      "password": "Ictech123$",
       "enabled": true
     }
   ],

@@ -110,7 +110,8 @@ def settings():
                 'port': int(request.form.get('port', 8728)),
                 'username': request.form.get('username', 'admin'),
                 'password': request.form.get('password', ''),
-                'enabled': request.form.get('enabled') == 'on'
+                'enabled': request.form.get('enabled') == 'on',
+                'use_ssl': request.form.get('use_ssl') == 'on'
             }
             
             config.add_device(device)
@@ -147,6 +148,12 @@ def settings():
                 'disk_usage': int(request.form.get('threshold_disk', 80)),
                 'interface_usage': int(request.form.get('threshold_interface', 80))
             }
+            
+            # Update connection settings
+            config_data['use_ssl'] = 'use_ssl' in request.form
+            config_data['connection_timeout'] = int(request.form.get('connection_timeout', 10))
+            config_data['connection_retries'] = int(request.form.get('connection_retries', 2))
+            config_data['retry_delay'] = int(request.form.get('retry_delay', 1))
             
             config.save_config(config_data)
             flash('Configuration updated successfully', 'success')

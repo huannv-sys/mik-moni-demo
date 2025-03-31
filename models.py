@@ -11,6 +11,7 @@ class Device:
     username: str = 'admin'
     password: str = ''
     enabled: bool = True
+    use_ssl: bool = False
     last_connected: Optional[datetime] = None
     error_message: Optional[str] = None
 
