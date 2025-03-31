@@ -98,7 +98,7 @@
                             {% for device in devices %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('views.dashboard', device=device.id) }}" class="fw-bold text-decoration-none">
+                                    <a href="{{ url_for('views.index', device=device.id) }}" class="fw-bold text-decoration-none">
                                         {{ device.name }}
                                     </a>
                                     {% if device.vendor %}
@@ -134,7 +134,7 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="{{ url_for('views.dashboard', device=device.id) }}" class="btn btn-sm btn-info">
+                                        <a href="{{ url_for('views.index', device=device.id) }}" class="btn btn-sm btn-info">
                                             <i class="bi bi-speedometer2"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editDeviceModal" 

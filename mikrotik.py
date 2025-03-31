@@ -812,147 +812,24 @@ class MikrotikAPI:
                 except Exception as enable_error:
                     logger.error(f"Failed to enable logging on device {device_id}: {str(enable_error)}")
                 
-                # Nếu vẫn không có logs sau tất cả nỗ lực, tạo một số logs mặc định
+                # Nếu vẫn không có logs sau tất cả nỗ lực, tạo thông báo lỗi rõ ràng
                 if not logs:
-                    logger.warning(f"Still no logs after all attempts, creating default logs for {device_id}")
+                    logger.warning(f"Still no logs after all attempts for {device_id}")
                     
                     # Lấy thông tin thiết bị để hiển thị thông tin phù hợp
                     device = DataStore.devices.get(device_id)
                     device_name = device.name if device else device_id
                     
-                    # Lấy thông tin hệ thống để có thêm dữ liệu cho logs
-                    system_data = DataStore.system_resources.get(device_id)
-                    interfaces_data = DataStore.interfaces.get(device_id, [])
-                    
-                    # Tính toán thời gian cho các logs
+                    # Tạo log thông báo lỗi
                     current_time = datetime.now()
-                    five_min_ago = (current_time - timedelta(minutes=5)).strftime("%H:%M:%S")
-                    fifteen_min_ago = (current_time - timedelta(minutes=15)).strftime("%H:%M:%S")
-                    thirty_min_ago = (current_time - timedelta(minutes=30)).strftime("%H:%M:%S")
-                    one_hour_ago = (current_time - timedelta(hours=1)).strftime("%H:%M:%S")
-                    two_hours_ago = (current_time - timedelta(hours=2)).strftime("%H:%M:%S")
                     current_time_str = current_time.strftime("%H:%M:%S")
                     
-                    # Tạo log thông báo trạng thái
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=current_time_str,
-                        topics="info",
-                        message="Hệ thống đang hoạt động bình thường.",
-                        timestamp=current_time
-                    ))
-                    
-                    # Tạo log về kết nối
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=five_min_ago,
-                        topics="system",
-                        message=f"Kết nối API đến thiết bị {device_name} đã được thiết lập.",
-                        timestamp=current_time
-                    ))
-                    
-                    # Tạo log về hệ thống dựa trên dữ liệu thật nếu có
-                    if system_data:
-                        uptime = system_data.uptime
-                        version = system_data.version
-                        platform = system_data.platform
-                        logs.append(LogEntry(
-                            device_id=device_id,
-                            time=fifteen_min_ago,
-                            topics="system",
-                            message=f"Thiết bị {device_name} đang chạy RouterOS phiên bản {version} trên nền tảng {platform}. Uptime: {uptime}",
-                            timestamp=current_time
-                        ))
-                    else:
-                        logs.append(LogEntry(
-                            device_id=device_id,
-                            time=fifteen_min_ago,
-                            topics="system",
-                            message=f"Thiết bị {device_name} đang hoạt động bình thường.",
-                            timestamp=current_time
-                        ))
-                    
-                    # Log về interfaces nếu có dữ liệu
-                    if interfaces_data:
-                        down_interfaces = [iface for iface in interfaces_data if not iface.running and not iface.disabled]
-                        if down_interfaces:
-                            for iface in down_interfaces[:2]:  # Chỉ lấy tối đa 2 interfaces
-                                logs.append(LogEntry(
-                                    device_id=device_id,
-                                    time=thirty_min_ago,
-                                    topics="interface",
-                                    message=f"Interface {iface.name} hiện đang down. Last down time: {iface.last_link_down_time}",
-                                    timestamp=current_time
-                                ))
-                        else:
-                            logs.append(LogEntry(
-                                device_id=device_id,
-                                time=thirty_min_ago,
-                                topics="interface",
-                                message="Tất cả các interfaces đang hoạt động bình thường.",
-                                timestamp=current_time
-                            ))
-                    
-                    # Tạo log về cấu hình
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=one_hour_ago,
-                        topics="system",
-                        message=f"Cấu hình thiết bị đã được sao lưu tự động.",
-                        timestamp=current_time
-                    ))
-                    
-                    # Tạo log về tường lửa
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=two_hours_ago,
-                        topics="firewall",
-                        message=f"Tường lửa đã chặn 3 lần tấn công từ IP: 192.168.1.100",
-                        timestamp=current_time
-                    ))
-                    
-                    # Log về DHCP
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=thirty_min_ago,
-                        topics="dhcp",
-                        message="DHCP đã cấp địa chỉ IP 192.168.1.155 cho thiết bị Android (28:7F:CF:78:62:57)",
-                        timestamp=current_time
-                    ))
-                    
-                    # Log về wireless nếu có thông tin
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=fifteen_min_ago,
-                        topics="wireless",
-                        message="Thiết bị mới (iPhone) đã kết nối vào mạng WiFi MikroTik-Guest",
-                        timestamp=current_time
-                    ))
-                    
-                    # Log về quản lý thiết bị
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=five_min_ago,
-                        topics="system",
-                        message="Đăng nhập vào quản trị thiết bị từ IP 192.168.1.10",
-                        timestamp=current_time
-                    ))
-                    
-                    # Log về cảnh báo
-                    logs.append(LogEntry(
-                        device_id=device_id,
-                        time=current_time_str,
-                        topics="warning",
-                        message="Detected high CPU usage (85%) during the last 5 minutes",
-                        timestamp=current_time
-                    ))
-                    
-                    # Thêm log thông báo về việc không lấy được logs thực
+                    # Chỉ thêm một log duy nhất thông báo lỗi
                     logs.append(LogEntry(
                         device_id=device_id,
                         time=current_time_str,
                         topics="error",
-                        message="Không lấy được log từ thiết bị sau nhiều lần thử. Đây là logs mặc định. Vui lòng kiểm tra cấu hình logging trên MikroTik router và đảm bảo rằng quyền truy cập API cho phép đọc log.",
+                        message=f"Không thể lấy logs từ thiết bị {device_name}. Vui lòng kiểm tra kết nối mạng, cấu hình logging trên router và quyền truy cập API.",
                         timestamp=current_time
                     ))
             
