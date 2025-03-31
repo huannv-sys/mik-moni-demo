@@ -15,7 +15,7 @@ function initDashboard() {
     
     // Auto-refresh timer
     let refreshTimer = null;
-    const defaultRefreshInterval = 30000; // 30 seconds by default
+    const defaultRefreshInterval = 15000; // 15 seconds by default
     
     // Update the active device in select dropdown and URL
     function updateActiveDevice(deviceId) {
@@ -93,34 +93,7 @@ function initDashboard() {
         deviceSelect.parentNode.insertBefore(refreshIndicator, deviceSelect.nextSibling);
     }
     
-    // Create refresh controls if they don't exist
-    if (!document.getElementById('refreshControls')) {
-        const refreshControls = document.createElement('div');
-        refreshControls.id = 'refreshControls';
-        refreshControls.className = 'ms-auto d-flex align-items-center';
-        refreshControls.innerHTML = `
-            <label for="refreshInterval" class="form-label mb-0 me-2">Auto-refresh:</label>
-            <select id="refreshInterval" class="form-select form-select-sm" style="width: auto;">
-                <option value="0">Off</option>
-                <option value="10">10 seconds</option>
-                <option value="30" selected>30 seconds</option>
-                <option value="60">1 minute</option>
-                <option value="300">5 minutes</option>
-            </select>
-            <button id="manualRefresh" class="btn btn-sm btn-outline-primary ms-2">
-                <i class="bi bi-arrow-clockwise"></i> Refresh Now
-            </button>
-        `;
-        
-        // Find the toolbar area to insert controls
-        const deviceSelectContainer = deviceSelect.closest('.row');
-        if (deviceSelectContainer) {
-            const colElement = deviceSelectContainer.querySelector('.col-md-6');
-            if (colElement) {
-                colElement.appendChild(refreshControls);
-            }
-        }
-    }
+    // We've moved refresh controls to base.html, so don't create them here anymore
     
     // Setup refresh interval change handler
     const refreshIntervalSelect = document.getElementById('refreshInterval');
@@ -133,20 +106,21 @@ function initDashboard() {
         });
     }
     
-    // Setup manual refresh button
-    const manualRefreshBtn = document.getElementById('manualRefresh');
+    // Setup manual refresh button - now we use the button in the header
+    const manualRefreshBtn = document.querySelector('.refresh-btn');
     if (manualRefreshBtn) {
         manualRefreshBtn.addEventListener('click', function() {
             const deviceId = deviceSelect.value;
             if (deviceId) {
                 this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...';
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
                 
                 loadDashboardData(deviceId)
                     .finally(() => {
                         setTimeout(() => {
                             this.disabled = false;
-                            this.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Now';
+                            this.innerHTML = originalHTML;
                         }, 500);
                     });
             }

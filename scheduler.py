@@ -44,8 +44,9 @@ def schedule_device_collection() -> None:
     # Clear existing jobs
     scheduler.remove_all_jobs()
     
-    # Get refresh interval
+    # Get refresh interval from config
     refresh_interval = config.get_refresh_interval()
+    logger.info(f"Using refresh interval of {refresh_interval} seconds from configuration")
     
     # Schedule data collection for each device
     devices = config.get_devices()

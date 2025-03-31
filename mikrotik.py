@@ -247,26 +247,60 @@ class MikrotikAPI:
                         rx_diff = interface.rx_byte - prev_interface.rx_byte
                         tx_diff = interface.tx_byte - prev_interface.tx_byte
                         
-                        # Xử lý trường hợp không có dữ liệu mới
-                        # Nếu không có sự thay đổi trong dữ liệu và interface đang hoạt động,
-                        # sử dụng giá trị cũ nếu có, hoặc tạo giá trị nhỏ để hiển thị ít nhất một số hoạt động
-                        if rx_diff == 0 and tx_diff == 0 and interface.running and not interface.disabled:
-                            # Giữ nguyên giá trị cũ nếu có
-                            if hasattr(prev_interface, 'rx_speed') and prev_interface.rx_speed > 0:
-                                interface.rx_speed = prev_interface.rx_speed * (0.8 + 0.4 * random.random())  # Thêm biến động +/- 20%
-                            else:
-                                # Tạo giá trị nhỏ với biến động ngẫu nhiên
-                                interface.rx_speed = 500 + random.random() * 1000  # 500-1500 bytes/s
+                        # Tính toán tốc độ trong bytes/second
+                        interface.rx_speed = rx_diff / time_diff if rx_diff >= 0 else 0
+                        interface.tx_speed = tx_diff / time_diff if tx_diff >= 0 else 0
+                        
+                        # Thử lấy tốc độ thực tế từ giao diện Mikrotik nếu có
+                        try:
+                            # Thử lấy thông tin tốc độ từ giao diện Ethernet hoặc phần cứng
+                            if iface_data.get('type') == 'ether':
+                                eth_resource = api.get_resource('/interface/ethernet')
+                                eth_data = eth_resource.get(name=interface.name)
+                                if eth_data and len(eth_data) > 0:
+                                    # Lấy tốc độ hiện tại nếu có
+                                    rate = eth_data[0].get('rate', None)
+                                    if rate:
+                                        logger.debug(f"Retrieved actual rate for {interface.name}: {rate}")
                             
-                            if hasattr(prev_interface, 'tx_speed') and prev_interface.tx_speed > 0:
-                                interface.tx_speed = prev_interface.tx_speed * (0.8 + 0.4 * random.random())  # Thêm biến động +/- 20%
+                            # Thử lấy dữ liệu monitor traffic nếu có
+                            # Chúng ta sẽ sử dụng phương pháp đơn giản hơn - tính toán dựa trên sự thay đổi byte count
+                            # và thời gian giữa các lần thu thập
+                            
+                            # Logs để gỡ lỗi
+                            logger.debug(f"Using calculated speeds for {interface.name}")
+                            logger.debug(f"Interface {interface.name}: RX bytes = {interface.rx_byte}, TX bytes = {interface.tx_byte}")
+                            logger.debug(f"Interface {interface.name}: Previous RX bytes = {interface.prev_rx_byte}, Previous TX bytes = {interface.prev_tx_byte}")
+                            
+                            # Tính toán tốc độ từ dữ liệu counter nếu có dữ liệu trước đó
+                            if interface.prev_rx_byte > 0 and interface.prev_tx_byte > 0:
+                                # Thời gian tính bằng giây kể từ lần cập nhật trước
+                                time_diff = 15  # Mặc định interval là 15 giây
+                                
+                                # Tính tốc độ RX (bytes/second)
+                                rx_diff = interface.rx_byte - interface.prev_rx_byte
+                                if rx_diff < 0:  # Trường hợp counter bị reset
+                                    rx_diff = interface.rx_byte
+                                interface.rx_speed = rx_diff / time_diff
+                                
+                                # Tính tốc độ TX (bytes/second)
+                                tx_diff = interface.tx_byte - interface.prev_tx_byte
+                                if tx_diff < 0:  # Trường hợp counter bị reset
+                                    tx_diff = interface.tx_byte
+                                interface.tx_speed = tx_diff / time_diff
+                                
+                                logger.debug(f"Calculated speeds for {interface.name}: RX={interface.rx_speed} bytes/s, TX={interface.tx_speed} bytes/s")
                             else:
-                                # Tạo giá trị nhỏ với biến động ngẫu nhiên
-                                interface.tx_speed = 300 + random.random() * 700  # 300-1000 bytes/s
-                        else:
-                            # Tính toán bình thường
-                            interface.rx_speed = rx_diff / time_diff if rx_diff >= 0 else 0
-                            interface.tx_speed = tx_diff / time_diff if tx_diff >= 0 else 0
+                                # Nếu không có dữ liệu trước đó thì đặt tốc độ = 0
+                                interface.rx_speed = 0
+                                interface.tx_speed = 0
+                                logger.debug(f"No previous data for {interface.name}, setting speeds to 0")
+                        except Exception as e:
+                            # Nếu không lấy được tốc độ thực tế, sử dụng tốc độ tính toán
+                            logger.debug(f"Failed to retrieve real-time speed for {interface.name}: {e}")
+                            # Đặt tốc độ = 0 nếu có lỗi
+                            interface.rx_speed = 0
+                            interface.tx_speed = 0
                 
                 interfaces.append(interface)
                 

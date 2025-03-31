@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
             "enabled": True
         }
     ],
-    "refresh_interval": 60,  # seconds
+    "refresh_interval": 15,  # seconds
     "interface_history_points": 288,  # 24 hours with 5-minute intervals
     "system_history_points": 288,  # 24 hours with 5-minute intervals
     "thresholds": {
@@ -167,7 +167,7 @@ def remove_device(device_id: str) -> None:
 
 def get_refresh_interval() -> int:
     """Get the data refresh interval in seconds"""
-    return load_config().get('refresh_interval', 60)
+    return load_config().get('refresh_interval', 15)
 
 def get_thresholds() -> Dict[str, int]:
     """Get the alert thresholds configuration"""
