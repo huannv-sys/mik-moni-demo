@@ -37,21 +37,78 @@ function initDashboard() {
     }
 }
 
-// Load dashboard data
+// Load dashboard data with improved error handling and concurrency
 function loadDashboardData(deviceId) {
     if (!deviceId) return;
     
-    // Update device status card
-    loadDeviceStatus(deviceId);
+    // Show loading spinners for each section
+    const statusCard = document.getElementById('deviceStatusCard');
+    const resourcesCard = document.getElementById('systemResourcesCard');
+    const interfacesCard = document.getElementById('interfacesSummaryCard');
+    const alertsCard = document.getElementById('alertsSummaryCard');
     
-    // Load system resources
-    loadSystemResources(deviceId);
+    if (statusCard) {
+        statusCard.innerHTML = '';
+        statusCard.appendChild(createSpinner());
+    }
     
-    // Load interfaces summary
-    loadInterfacesSummary(deviceId);
+    if (resourcesCard) {
+        resourcesCard.innerHTML = '';
+        resourcesCard.appendChild(createSpinner());
+    }
     
-    // Load alerts summary
-    loadAlertsSummary(deviceId);
+    if (interfacesCard) {
+        interfacesCard.innerHTML = '';
+        interfacesCard.appendChild(createSpinner());
+    }
+    
+    if (alertsCard) {
+        alertsCard.innerHTML = '';
+        alertsCard.appendChild(createSpinner());
+    }
+    
+    // Use Promise.all to fetch all data concurrently
+    Promise.allSettled([
+        // Each function is wrapped in a promise to ensure it always resolves
+        new Promise(resolve => {
+            loadDeviceStatus(deviceId)
+                .then(result => resolve(result))
+                .catch(error => {
+                    console.error('Error loading device status:', error);
+                    resolve(null); // Ensure this promise resolves even on error
+                });
+        }),
+        new Promise(resolve => {
+            loadSystemResources(deviceId)
+                .then(result => resolve(result))
+                .catch(error => {
+                    console.error('Error loading system resources:', error);
+                    resolve(null);
+                });
+        }),
+        new Promise(resolve => {
+            loadInterfacesSummary(deviceId)
+                .then(result => resolve(result))
+                .catch(error => {
+                    console.error('Error loading interfaces summary:', error);
+                    resolve(null);
+                });
+        }),
+        new Promise(resolve => {
+            loadAlertsSummary(deviceId)
+                .then(result => resolve(result))
+                .catch(error => {
+                    console.error('Error loading alerts summary:', error);
+                    resolve(null);
+                });
+        })
+    ])
+    .then(results => {
+        console.log('All dashboard data loading complete. Results:', results);
+    })
+    .catch(error => {
+        console.error('Error loading dashboard data:', error);
+    });
 }
 
 // Load device status
