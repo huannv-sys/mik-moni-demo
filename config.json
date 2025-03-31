@@ -7,14 +7,6 @@
       "location": "",
       "contact": "",
       "enabled": true
-    },
-    {
-      "id": "81ee409a-11f4-4368-8a29-9bf9175196cb",
-      "name": "home",
-      "description": "test",
-      "location": "thi\u1ec7u nguy\u00ean",
-      "contact": "mr.huan",
-      "enabled": true
     }
   ],
   "devices": [
