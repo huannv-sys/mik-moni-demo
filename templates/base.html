@@ -88,9 +88,14 @@
                                 <i class="bi bi-exclamation-triangle"></i> Alerts
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if page == 'sites' %}active{% endif %}" href="{{ url_for('views.sites') }}">
+                                <i class="bi bi-geo-alt"></i> Quản lý Sites
+                            </a>
+                        </li>
                         <li class="nav-item mt-3">
                             <a class="nav-link {% if page == 'settings' %}active{% endif %}" href="{{ url_for('views.settings') }}">
-                                <i class="bi bi-sliders"></i> Settings
+                                <i class="bi bi-sliders"></i> Cài đặt
                             </a>
                         </li>
                     </ul>
@@ -108,7 +113,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if page == 'system' %}active{% endif %}" href="{{ url_for('views.system') }}">
-                                <i class="bi bi-cpu"></i> <span class="d-none d-sm-inline">System</span>
+                                <i class="bi bi-cpu"></i> <span class="d-none d-sm-inline">Hệ thống</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -123,7 +128,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if page == 'services' %}active{% endif %}" href="{{ url_for('views.services') }}">
-                                <i class="bi bi-gear"></i> <span class="d-none d-sm-inline">Services</span>
+                                <i class="bi bi-gear"></i> <span class="d-none d-sm-inline">Dịch vụ</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -133,12 +138,17 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if page == 'alerts' %}active{% endif %}" href="{{ url_for('views.alerts') }}">
-                                <i class="bi bi-exclamation-triangle"></i> <span class="d-none d-sm-inline">Alerts</span>
+                                <i class="bi bi-exclamation-triangle"></i> <span class="d-none d-sm-inline">Cảnh báo</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if page == 'sites' %}active{% endif %}" href="{{ url_for('views.sites') }}">
+                                <i class="bi bi-geo-alt"></i> <span class="d-none d-sm-inline">Sites</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if page == 'settings' %}active{% endif %}" href="{{ url_for('views.settings') }}">
-                                <i class="bi bi-sliders"></i> <span class="d-none d-sm-inline">Settings</span>
+                                <i class="bi bi-sliders"></i> <span class="d-none d-sm-inline">Cài đặt</span>
                             </a>
                         </li>
                     </ul>

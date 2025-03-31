@@ -5,11 +5,22 @@ from typing import Dict, Any, List
 
 # Default configuration
 DEFAULT_CONFIG = {
+    "sites": [
+        {
+            "id": "default",
+            "name": "Site mặc định",
+            "description": "Site mặc định tự động tạo",
+            "location": "",
+            "contact": "",
+            "enabled": True
+        }
+    ],
     "devices": [
         {
             "id": "default",
             "name": "My Mikrotik",
             "host": "192.168.88.1",
+            "site_id": "default",
             "port": 8728,
             "username": "admin",
             "password": "",
@@ -58,34 +69,93 @@ def save_config(config: Dict[str, Any]) -> None:
     except Exception as e:
         print(f"Error saving config: {e}")
 
+def get_sites() -> List[Dict[str, Any]]:
+    """Lấy danh sách các site đã cấu hình"""
+    return load_config().get('sites', [])
+
 def get_devices() -> List[Dict[str, Any]]:
-    """Get the list of configured devices"""
+    """Lấy danh sách các thiết bị đã cấu hình"""
     return load_config().get('devices', [])
 
-def add_device(device: Dict[str, Any]) -> None:
-    """Add a new device to configuration"""
+def get_devices_by_site(site_id: str) -> List[Dict[str, Any]]:
+    """Lấy danh sách thiết bị theo site"""
+    return [d for d in get_devices() if d.get('site_id') == site_id]
+
+def add_site(site: Dict[str, Any]) -> None:
+    """Thêm hoặc cập nhật một site"""
     config = load_config()
-    # Generate a unique ID if not provided
+    # Tạo ID nếu chưa có
+    if 'id' not in site:
+        import uuid
+        site['id'] = str(uuid.uuid4())
+    
+    # Kiểm tra xem site đã tồn tại chưa
+    for i, s in enumerate(config.get('sites', [])):
+        if s['id'] == site['id']:
+            # Cập nhật site hiện có
+            config['sites'][i] = site
+            save_config(config)
+            return
+    
+    # Thêm site mới
+    if 'sites' not in config:
+        config['sites'] = []
+    config['sites'].append(site)
+    save_config(config)
+
+def remove_site(site_id: str) -> None:
+    """Xóa một site và tất cả thiết bị liên quan"""
+    config = load_config()
+    
+    # Xóa site
+    config['sites'] = [s for s in config.get('sites', []) if s['id'] != site_id]
+    
+    # Xóa các thiết bị trong site này
+    config['devices'] = [d for d in config.get('devices', []) if d.get('site_id') != site_id]
+    
+    save_config(config)
+
+def add_device(device: Dict[str, Any]) -> None:
+    """Thêm hoặc cập nhật một thiết bị"""
+    config = load_config()
+    # Tạo ID nếu chưa có
     if 'id' not in device:
         import uuid
         device['id'] = str(uuid.uuid4())
     
-    # Check if device with same ID already exists
-    for i, d in enumerate(config['devices']):
+    # Gắn vào site mặc định nếu không có site_id
+    if 'site_id' not in device or not device['site_id']:
+        if len(config.get('sites', [])) > 0:
+            device['site_id'] = config['sites'][0]['id']
+        else:
+            # Tạo site mặc định nếu không có site nào
+            default_site = {
+                'id': 'default',
+                'name': 'Site mặc định',
+                'description': 'Site mặc định tự động tạo',
+                'enabled': True
+            }
+            add_site(default_site)
+            device['site_id'] = 'default'
+    
+    # Kiểm tra xem thiết bị đã tồn tại chưa
+    for i, d in enumerate(config.get('devices', [])):
         if d['id'] == device['id']:
-            # Update existing device
+            # Cập nhật thiết bị hiện có
             config['devices'][i] = device
             save_config(config)
             return
     
-    # Add new device
+    # Thêm thiết bị mới
+    if 'devices' not in config:
+        config['devices'] = []
     config['devices'].append(device)
     save_config(config)
 
 def remove_device(device_id: str) -> None:
-    """Remove a device from configuration"""
+    """Xóa một thiết bị"""
     config = load_config()
-    config['devices'] = [d for d in config['devices'] if d['id'] != device_id]
+    config['devices'] = [d for d in config.get('devices', []) if d['id'] != device_id]
     save_config(config)
 
 def get_refresh_interval() -> int:

@@ -3,10 +3,20 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 @dataclass
+class Site:
+    id: str
+    name: str
+    description: str = ''
+    location: str = ''
+    contact: str = ''
+    enabled: bool = True
+
+@dataclass
 class Device:
     id: str
     name: str
     host: str
+    site_id: str = 'default'
     port: int = 8728
     username: str = 'admin'
     password: str = ''
@@ -159,6 +169,7 @@ class Alert:
 
 # In-memory data store
 class DataStore:
+    sites: Dict[str, Site] = {}
     devices: Dict[str, Device] = {}
     system_resources: Dict[str, SystemResources] = {}
     interfaces: Dict[str, List[Interface]] = {}
@@ -176,3 +187,15 @@ class DataStore:
     
     # System resource history
     system_history: Dict[str, List[Dict[str, Any]]] = {}
+    
+    @classmethod
+    def get_devices_by_site(cls, site_id: str) -> List[Device]:
+        """Lấy danh sách thiết bị theo site"""
+        return [device for device in cls.devices.values() if device.site_id == site_id]
+        
+    @classmethod
+    def get_site_name(cls, site_id: str) -> str:
+        """Lấy tên site từ id"""
+        if site_id in cls.sites:
+            return cls.sites[site_id].name
+        return "Không xác định"

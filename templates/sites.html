@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản lý Sites - Mikrotik Monitoring{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Quản lý Sites</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title d-flex justify-content-between align-items-center">
+                    Danh sách Sites
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSiteModal">
+                        <i class="bi bi-plus-circle"></i> Thêm Site mới
+                    </button>
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tên</th>
+                                <th>Mô tả</th>
+                                <th>Vị trí</th>
+                                <th>Liên hệ</th>
+                                <th>Thiết bị</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for site in sites %}
+                            <tr>
+                                <td>{{ site.name }}</td>
+                                <td>{{ site.description }}</td>
+                                <td>{{ site.location }}</td>
+                                <td>{{ site.contact }}</td>
+                                <td>
+                                    {% set device_count = devices_by_site[site.id]|length if site.id in devices_by_site else 0 %}
+                                    <span class="badge bg-info">{{ device_count }} thiết bị</span>
+                                </td>
+                                <td>
+                                    {% if site.enabled %}
+                                    <span class="badge bg-success">Hoạt động</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Vô hiệu</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" 
+                                                data-bs-target="#editSiteModal" 
+                                                data-site-id="{{ site.id }}"
+                                                data-site-name="{{ site.name }}"
+                                                data-site-description="{{ site.description }}"
+                                                data-site-location="{{ site.location }}"
+                                                data-site-contact="{{ site.contact }}"
+                                                data-site-enabled="{{ site.enabled }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if site.id != 'default' %}
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" 
+                                                data-bs-target="#deleteSiteModal" 
+                                                data-site-id="{{ site.id }}" 
+                                                data-site-name="{{ site.name }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                        <a href="{{ url_for('views.site_devices', site_id=site.id) }}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Site Modal -->
+<div class="modal fade" id="addSiteModal" tabindex="-1" aria-labelledby="addSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSiteModalLabel">Thêm Site mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('views.sites') }}">
+                <input type="hidden" name="add_site" value="1">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="siteName" class="form-label">Tên Site</label>
+                        <input type="text" class="form-control" id="siteName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="siteDescription" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteLocation" class="form-label">Vị trí</label>
+                        <input type="text" class="form-control" id="siteLocation" name="location">
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteContact" class="form-label">Thông tin liên hệ</label>
+                        <input type="text" class="form-control" id="siteContact" name="contact">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="siteEnabled" name="enabled" checked>
+                        <label class="form-check-label" for="siteEnabled">Hoạt động</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Thêm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Site Modal -->
+<div class="modal fade" id="editSiteModal" tabindex="-1" aria-labelledby="editSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSiteModalLabel">Chỉnh sửa Site</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('views.sites') }}">
+                <input type="hidden" name="add_site" value="1">
+                <input type="hidden" id="editSiteId" name="id" value="">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editSiteName" class="form-label">Tên Site</label>
+                        <input type="text" class="form-control" id="editSiteName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSiteDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="editSiteDescription" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSiteLocation" class="form-label">Vị trí</label>
+                        <input type="text" class="form-control" id="editSiteLocation" name="location">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSiteContact" class="form-label">Thông tin liên hệ</label>
+                        <input type="text" class="form-control" id="editSiteContact" name="contact">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editSiteEnabled" name="enabled">
+                        <label class="form-check-label" for="editSiteEnabled">Hoạt động</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Site Modal -->
+<div class="modal fade" id="deleteSiteModal" tabindex="-1" aria-labelledby="deleteSiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteSiteModalLabel">Xóa Site</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa site <span id="deleteSiteName" class="fw-bold"></span>?</p>
+                <p class="text-danger">Tất cả thiết bị trong site này cũng sẽ bị xóa!</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="{{ url_for('views.sites') }}">
+                    <input type="hidden" name="remove_site" value="1">
+                    <input type="hidden" id="deleteSiteId" name="site_id" value="">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Xử lý modal chỉnh sửa Site
+        const editSiteModal = document.getElementById('editSiteModal');
+        if (editSiteModal) {
+            editSiteModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const siteId = button.getAttribute('data-site-id');
+                const siteName = button.getAttribute('data-site-name');
+                const siteDescription = button.getAttribute('data-site-description');
+                const siteLocation = button.getAttribute('data-site-location');
+                const siteContact = button.getAttribute('data-site-contact');
+                const siteEnabled = button.getAttribute('data-site-enabled') === 'True';
+                
+                const modal = this;
+                modal.querySelector('#editSiteId').value = siteId;
+                modal.querySelector('#editSiteName').value = siteName;
+                modal.querySelector('#editSiteDescription').value = siteDescription;
+                modal.querySelector('#editSiteLocation').value = siteLocation;
+                modal.querySelector('#editSiteContact').value = siteContact;
+                modal.querySelector('#editSiteEnabled').checked = siteEnabled;
+            });
+        }
+        
+        // Xử lý modal xóa Site
+        const deleteSiteModal = document.getElementById('deleteSiteModal');
+        if (deleteSiteModal) {
+            deleteSiteModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const siteId = button.getAttribute('data-site-id');
+                const siteName = button.getAttribute('data-site-name');
+                
+                const modal = this;
+                modal.querySelector('#deleteSiteId').value = siteId;
+                modal.querySelector('#deleteSiteName').textContent = siteName;
+            });
+        }
+    });
+</script>
+{% endblock %}
