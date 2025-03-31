@@ -24,6 +24,8 @@ class Device:
     use_ssl: bool = False
     last_connected: Optional[datetime] = None
     error_message: Optional[str] = None
+    comment: str = ''
+    location: str = ''
 
 @dataclass
 class SystemResources:

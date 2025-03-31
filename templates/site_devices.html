@@ -87,9 +87,9 @@
                             <tr>
                                 <th>Tên</th>
                                 <th>Địa chỉ IP</th>
-                                <th>Cổng</th>
+                                <th>Vị trí</th>
                                 <th>Trạng thái</th>
-                                <th>Kết nối cuối</th>
+                                <th>Ghi chú</th>
                                 <th>Thao tác</th>
                             </tr>
                         </thead>
@@ -98,7 +98,7 @@
                             <tr>
                                 <td>{{ device.name }}</td>
                                 <td>{{ device.host }}</td>
-                                <td>{{ device.port }}</td>
+                                <td>{{ device.location or '' }}</td>
                                 <td>
                                     {% if device.enabled %}
                                         {% if device.last_connected %}
@@ -111,11 +111,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if device.last_connected %}
-                                    {{ device.last_connected.strftime('%d-%m-%Y %H:%M:%S') }}
-                                    {% else %}
-                                    Chưa từng kết nối
-                                    {% endif %}
+                                    {{ device.comment or '' }}
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
@@ -130,7 +126,9 @@
                                                 data-device-username="{{ device.username }}"
                                                 data-device-password="{{ device.password }}"
                                                 data-device-enabled="{{ device.enabled }}"
-                                                data-device-use-ssl="{{ device.use_ssl }}">
+                                                data-device-use-ssl="{{ device.use_ssl }}"
+                                                data-device-location="{{ device.location }}"
+                                                data-device-comment="{{ device.comment }}">
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDeviceModal" data-device-id="{{ device.id }}" data-device-name="{{ device.name }}">
@@ -193,6 +191,14 @@
                         <label for="devicePassword" class="form-label">Mật khẩu</label>
                         <input type="password" class="form-control" id="devicePassword" name="password">
                     </div>
+                    <div class="mb-3">
+                        <label for="deviceLocation" class="form-label">Vị trí</label>
+                        <input type="text" class="form-control" id="deviceLocation" name="location" placeholder="Phòng máy chủ, tầng 2,...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceComment" class="form-label">Ghi chú</label>
+                        <textarea class="form-control" id="deviceComment" name="comment" rows="2" placeholder="Thông tin bổ sung về thiết bị..."></textarea>
+                    </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="deviceUseSSL" name="use_ssl">
                         <label class="form-check-label" for="deviceUseSSL">Sử dụng SSL</label>
@@ -246,6 +252,14 @@
                         <label for="editDevicePassword" class="form-label">Mật khẩu</label>
                         <input type="password" class="form-control" id="editDevicePassword" name="password" placeholder="Để trống để giữ nguyên mật khẩu hiện tại">
                         <div class="form-text">Để trống để giữ nguyên mật khẩu hiện tại</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDeviceLocation" class="form-label">Vị trí</label>
+                        <input type="text" class="form-control" id="editDeviceLocation" name="location" placeholder="Phòng máy chủ, tầng 2,...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDeviceComment" class="form-label">Ghi chú</label>
+                        <textarea class="form-control" id="editDeviceComment" name="comment" rows="2" placeholder="Thông tin bổ sung về thiết bị..."></textarea>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="editDeviceUseSSL" name="use_ssl">
@@ -308,6 +322,8 @@
                 const deviceUsername = button.getAttribute('data-device-username');
                 const deviceEnabled = button.getAttribute('data-device-enabled') === 'True';
                 const deviceUseSSL = button.getAttribute('data-device-use-ssl') === 'True';
+                const deviceLocation = button.getAttribute('data-device-location') || '';
+                const deviceComment = button.getAttribute('data-device-comment') || '';
                 
                 const modal = this;
                 modal.querySelector('#editDeviceId').value = deviceId;
@@ -317,6 +333,8 @@
                 modal.querySelector('#editDeviceUsername').value = deviceUsername;
                 modal.querySelector('#editDeviceEnabled').checked = deviceEnabled;
                 modal.querySelector('#editDeviceUseSSL').checked = deviceUseSSL;
+                modal.querySelector('#editDeviceLocation').value = deviceLocation;
+                modal.querySelector('#editDeviceComment').value = deviceComment;
                 // Không điền mật khẩu để giữ nguyên mật khẩu hiện tại
                 modal.querySelector('#editDevicePassword').value = '';
             });

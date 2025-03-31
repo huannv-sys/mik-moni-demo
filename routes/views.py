@@ -166,7 +166,9 @@ def site_devices(site_id):
                 'username': request.form.get('username', 'admin'),
                 'password': request.form.get('password', ''),
                 'enabled': request.form.get('enabled') == 'on',
-                'use_ssl': request.form.get('use_ssl') == 'on'
+                'use_ssl': request.form.get('use_ssl') == 'on',
+                'location': request.form.get('location', ''),
+                'comment': request.form.get('comment', '')
             }
             
             # Nếu đang chỉnh sửa thiết bị và không nhập mật khẩu mới
@@ -329,7 +331,9 @@ def settings():
                 'username': request.form.get('username', 'admin'),
                 'password': request.form.get('password', ''),
                 'enabled': request.form.get('enabled') == 'on',
-                'use_ssl': request.form.get('use_ssl') == 'on'
+                'use_ssl': request.form.get('use_ssl') == 'on',
+                'location': request.form.get('location', ''),
+                'comment': request.form.get('comment', '')
             }
             
             config.add_device(device)
