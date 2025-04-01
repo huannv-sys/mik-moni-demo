@@ -56,6 +56,19 @@ function loadDHCPLeases(deviceId) {
             }
             return response.json();
         })
+        .catch(error => {
+            console.error('Error loading DHCP leases:', error);
+            dhcpCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">DHCP Leases</h5>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        DHCP leases not available. The device may be offline or this feature may not be supported.
+                    </div>
+                </div>
+            `;
+            throw error;
+        })
         .then(data => {
             const leases = data.leases;
             
@@ -146,6 +159,19 @@ function loadFirewallRules(deviceId) {
                 throw new Error('Firewall rules not available');
             }
             return response.json();
+        })
+        .catch(error => {
+            console.error('Error loading firewall rules:', error);
+            firewallCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">Firewall Rules</h5>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        Firewall rules not available. The device may be offline or this feature may not be supported.
+                    </div>
+                </div>
+            `;
+            throw error;
         })
         .then(data => {
             const rules = data.rules;
@@ -241,6 +267,19 @@ function loadWirelessClients(deviceId) {
                 throw new Error('Wireless clients not available');
             }
             return response.json();
+        })
+        .catch(error => {
+            console.error('Error loading wireless clients:', error);
+            wirelessCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">Wireless Clients</h5>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        Wireless clients not available. The device may be offline or this feature may not be supported.
+                    </div>
+                </div>
+            `;
+            throw error;
         })
         .then(data => {
             const clients = data.clients;
@@ -495,6 +534,19 @@ function loadCapsmanRegistrations(deviceId) {
                 throw new Error('CAPsMAN registrations not available');
             }
             return response.json();
+        })
+        .catch(error => {
+            console.error('Error loading CAPsMAN registrations:', error);
+            capsmanCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">CAPsMAN Registrations</h5>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        CAPsMAN registrations not available. The device may be offline or this feature may not be supported.
+                    </div>
+                </div>
+            `;
+            throw error;
         })
         .then(data => {
             const registrations = data.registrations;

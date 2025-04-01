@@ -145,6 +145,19 @@ function loadARPEntries(deviceId) {
             }
             return response.json();
         })
+        .catch(error => {
+            console.error('Error loading ARP entries:', error);
+            arpEntriesCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">ARP Table</h5>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        ARP entries not available. The device may be offline or this feature may not be supported.
+                    </div>
+                </div>
+            `;
+            throw error;
+        })
         .then(data => {
             const entries = data.entries;
             
