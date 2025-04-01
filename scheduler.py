@@ -16,6 +16,19 @@ scheduler = BackgroundScheduler()
 
 def collect_device_data(device_id: str) -> None:
     """Collect data from a device"""
+    # Kiểm tra xem thiết bị còn tồn tại trong cấu hình không
+    device_exists = False
+    for device_config in config.get_devices():
+        if device_config['id'] == device_id:
+            device_exists = True
+            break
+    
+    # Nếu thiết bị không còn trong cấu hình, làm sạch dữ liệu và bỏ qua
+    if not device_exists:
+        logger.warning(f"Device {device_id} not found in config, cleaning up data")
+        config.remove_device(device_id)
+        return
+    
     device = DataStore.devices.get(device_id)
     if not device or not device.enabled:
         logger.debug(f"Skipping disabled or missing device: {device_id}")

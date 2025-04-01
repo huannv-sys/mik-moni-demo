@@ -325,9 +325,45 @@ def resolve_alert(alert_id):
 @api.route('/refresh/<device_id>', methods=['POST'])
 def refresh_device(device_id):
     """Manually refresh data for a device"""
-    if device_id not in DataStore.devices:
-        return jsonify({'error': 'Device not found'}), 404
+    import config
     
+    # Kiểm tra xem thiết bị còn tồn tại trong cấu hình không
+    device_exists = False
+    device_enabled = False
+    for device in config.get_devices():
+        if device['id'] == device_id:
+            device_exists = True
+            device_enabled = device.get('enabled', True)
+            break
+    
+    # Nếu thiết bị không còn trong cấu hình hoặc bị vô hiệu hóa, làm sạch dữ liệu
+    if not device_exists:
+        logger.info(f"Device {device_id} not found in config, cleaning up its data")
+        config.remove_device(device_id)
+        return jsonify({
+            'success': True, 
+            'removed': True, 
+            'message': "Thiết bị không còn tồn tại trong cấu hình, dữ liệu đã được làm sạch"
+        })
+    
+    # Nếu thiết bị bị vô hiệu hóa
+    if not device_enabled:
+        logger.info(f"Device {device_id} is disabled, cleaning up its data")
+        # Vẫn giữ cấu hình nhưng xóa dữ liệu tạm thời
+        if device_id in DataStore.devices:
+            DataStore.devices[device_id].error_message = "Thiết bị đã bị vô hiệu hóa"
+            DataStore.devices[device_id].last_connected = None
+        return jsonify({
+            'success': True, 
+            'disabled': True, 
+            'message': "Thiết bị đã bị vô hiệu hóa, dữ liệu được làm sạch"
+        })
+    
+    # Kiểm tra nếu thiết bị không có trong DataStore
+    if device_id not in DataStore.devices:
+        return jsonify({'error': 'Device not found in DataStore'}), 404
+    
+    # Tiếp tục với quá trình làm mới dữ liệu bình thường
     try:
         result = mikrotik_api.collect_all_data(device_id)
         return jsonify(result)

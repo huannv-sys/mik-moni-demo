@@ -116,7 +116,9 @@ class MikrotikAPI:
         return False, last_error
     
     def disconnect(self, device_id: str) -> None:
-        """Disconnect from a device"""
+        """Disconnect from a device and update its status"""
+        from models import DataStore
+        
         if device_id in self.connections:
             try:
                 self.connections[device_id]['connection'].disconnect()
@@ -124,6 +126,11 @@ class MikrotikAPI:
                 logger.error(f"Error disconnecting from device {device_id}: {e}")
             finally:
                 del self.connections[device_id]
+        
+        # Cập nhật trạng thái thiết bị
+        if device_id in DataStore.devices:
+            DataStore.devices[device_id].last_connected = None
+            DataStore.devices[device_id].error_message = "Thiết bị đã bị ngắt kết nối"
     
     def disconnect_all(self) -> None:
         """Disconnect from all devices"""

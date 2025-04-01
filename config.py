@@ -160,10 +160,50 @@ def add_device(device: Dict[str, Any]) -> None:
     save_config(config)
 
 def remove_device(device_id: str) -> None:
-    """Xóa một thiết bị"""
+    """Xóa một thiết bị và làm sạch dữ liệu liên quan"""
+    from models import DataStore
+    
+    # Xóa device khỏi cấu hình
     config = load_config()
     config['devices'] = [d for d in config.get('devices', []) if d['id'] != device_id]
     save_config(config)
+    
+    # Làm sạch dữ liệu thiết bị trong DataStore
+    if device_id in DataStore.devices:
+        del DataStore.devices[device_id]
+    
+    # Xóa dữ liệu thống kê hệ thống
+    if device_id in DataStore.system_resources:
+        del DataStore.system_resources[device_id]
+    
+    # Xóa lịch sử hệ thống
+    if device_id in DataStore.system_history:
+        del DataStore.system_history[device_id]
+    
+    # Xóa giao diện và lịch sử giao diện
+    if device_id in DataStore.interfaces:
+        del DataStore.interfaces[device_id]
+    if device_id in DataStore.interface_history:
+        del DataStore.interface_history[device_id]
+    
+    # Xóa các dữ liệu khác
+    if device_id in DataStore.ip_addresses:
+        del DataStore.ip_addresses[device_id]
+    if device_id in DataStore.arp_entries:
+        del DataStore.arp_entries[device_id]
+    if device_id in DataStore.dhcp_leases:
+        del DataStore.dhcp_leases[device_id]
+    if device_id in DataStore.firewall_rules:
+        del DataStore.firewall_rules[device_id]
+    if device_id in DataStore.wireless_clients:
+        del DataStore.wireless_clients[device_id]
+    if device_id in DataStore.capsman_registrations:
+        del DataStore.capsman_registrations[device_id]
+    if device_id in DataStore.logs:
+        del DataStore.logs[device_id]
+    
+    # Lọc các cảnh báo liên quan đến thiết bị
+    DataStore.alerts = [a for a in DataStore.alerts if a.device_id != device_id]
 
 def get_refresh_interval() -> int:
     """Get the data refresh interval in seconds"""
